@@ -1281,3 +1281,244 @@ body.vista-secundaria #loginAdmin {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(90, 70, 160, 0.12);
 }
+/* ==========================================
+   HISTORIAL COMPACTO DE RECOMENDACIONES
+========================================== */
+
+.historial-item {
+  padding: 20px;
+  margin-bottom: 14px;
+  background: #ffffff;
+  border: 1px solid #e9e7f5;
+  border-radius: 14px;
+  transition: box-shadow 0.2s ease;
+}
+
+.historial-item:hover {
+  box-shadow: 0 6px 20px rgba(90, 75, 180, 0.08);
+}
+
+.historial-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.historial-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.historial-info small {
+  color: #8a87a1;
+  font-size: 12px;
+}
+
+.historial-info h3 {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #242238;
+}
+
+.btn-ver-detalles {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 9px;
+  background: #eeeaff;
+  color: #5d4bd8;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-ver-detalles:hover {
+  background: #5d4bd8;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.historial-detalles {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #eeecf5;
+}
+
+.historial-detalles > p {
+  margin-bottom: 18px;
+  line-height: 1.6;
+}
+
+.historial-detalles.oculto {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .historial-resumen {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-ver-detalles {
+    width: 100%;
+  }
+}
+/* ==========================================
+   PERFUMEIA - FORMULARIOS DE ACCESO
+========================================== */
+
+/* Ocultar correctamente los paneles */
+#panelLogin.oculto,
+#panelRegistro.oculto,
+#panelRecuperacion.oculto,
+#panelNuevaPassword.oculto {
+  display: none !important;
+}
+
+/* Separación entre elementos */
+#panelRecuperacion p,
+#panelNuevaPassword p {
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+/* Botones principales */
+#btnEnviarRecuperacion,
+#btnGuardarNuevaPassword {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  background: #5b4bdb;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+#btnEnviarRecuperacion:hover,
+#btnGuardarNuevaPassword:hover {
+  background: #4838c6;
+  transform: translateY(-2px);
+}
+
+/* Enlaces secundarios */
+#btnMostrarRecuperacion,
+#btnVolverLogin,
+#btnVolverLoginPassword {
+  background: transparent;
+  border: none;
+  color: #5b4bdb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px;
+  transition: color 0.2s ease;
+}
+
+#btnMostrarRecuperacion:hover,
+#btnVolverLogin:hover,
+#btnVolverLoginPassword:hover {
+  color: #3829ad;
+  text-decoration: underline;
+}
+
+/* Centrar enlaces */
+#panelRecuperacion .texto-acceso,
+#panelNuevaPassword .texto-acceso,
+#panelLogin .texto-acceso {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Mensajes de recuperación */
+#mensajeRecuperacion,
+#mensajeNuevaPassword {
+  margin-top: 15px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* ==========================================
+   PERFUMEIA - TARJETAS DE RECOMENDACIONES
+========================================== */
+
+.contenedor-recomendaciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.tarjeta-recomendacion {
+  background: #ffffff;
+  border: 1px solid #e7e3fb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(40, 30, 100, 0.04);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.tarjeta-recomendacion:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(91, 75, 219, 0.12);
+  border-color: #bdb5f7;
+}
+
+.encabezado-recomendacion {
+  margin-bottom: 18px;
+}
+
+.numero-recomendacion {
+  display: inline-block;
+  background: #eeeaff;
+  color: #5b4bdb;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.encabezado-recomendacion h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #191633;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.contenido-recomendacion p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #55516c;
+  margin-bottom: 14px;
+}
+
+.contenido-recomendacion strong {
+  color: #292342;
+}
+
+.sin-recomendaciones {
+  padding: 20px;
+  color: #55516c;
+  line-height: 1.6;
+}
+
+/* Adaptación a celulares */
+@media (max-width: 768px) {
+  .contenedor-recomendaciones {
+    grid-template-columns: 1fr;
+  }
+
+  .tarjeta-recomendacion {
+    padding: 20px;
+  }
+}

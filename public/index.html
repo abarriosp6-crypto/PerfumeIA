@@ -325,6 +325,13 @@
 
         <p id="mensajeLogin" role="status" aria-live="polite"></p>
       </form>
+      <!-- RECUPERACIÓN DE CONTRASEÑA -->
+
+<p class="texto-acceso">
+  <button type="button" id="btnMostrarRecuperacion">
+    ¿Olvidaste tu contraseña?
+  </button>
+</p>
 
       <p class="texto-acceso">
         ¿Todavía no tienes cuenta?
@@ -355,7 +362,129 @@
 
       <p id="mensajeLoginAdmin" role="status" aria-live="polite"></p>
     </div>
+<!-- =====================================
+     RECUPERAR CONTRASEÑA
+====================================== -->
 
+<div id="panelRecuperacion" class="oculto">
+
+  <h3>Recuperar contraseña</h3>
+
+  <p>
+    Ingresa el correo electrónico asociado a tu cuenta.
+    Te enviaremos un enlace para restablecer tu contraseña.
+  </p>
+
+  <form id="formRecuperacion">
+
+    <div class="admin-campo">
+
+      <label for="correoRecuperacion">
+        Correo electrónico
+      </label>
+
+      <input
+        type="email"
+        id="correoRecuperacion"
+        placeholder="correo@ejemplo.com"
+        autocomplete="email"
+        maxlength="254"
+        required
+      >
+
+    </div>
+
+    <button type="submit" id="btnEnviarRecuperacion">
+      Enviar enlace de recuperación
+    </button>
+
+    <p
+      id="mensajeRecuperacion"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <p class="texto-acceso">
+    <button type="button" id="btnVolverLogin">
+      ← Volver a iniciar sesión
+    </button>
+  </p>
+
+</div>
+
+
+<!-- =====================================
+     ESTABLECER NUEVA CONTRASEÑA
+====================================== -->
+
+<div id="panelNuevaPassword" class="oculto">
+
+  <h3>Establecer nueva contraseña</h3>
+
+  <p>
+    Ingresa tu nueva contraseña para recuperar
+    el acceso a PerfumeIA.
+  </p>
+
+  <form id="formNuevaPassword">
+
+    <div class="admin-campo">
+
+      <label for="nuevaPassword">
+        Nueva contraseña
+      </label>
+
+      <input
+        type="password"
+        id="nuevaPassword"
+        placeholder="Mínimo 10 caracteres"
+        autocomplete="new-password"
+        minlength="10"
+        maxlength="72"
+        required
+      >
+
+    </div>
+
+    <div class="admin-campo">
+
+      <label for="confirmarNuevaPassword">
+        Confirmar contraseña
+      </label>
+
+      <input
+        type="password"
+        id="confirmarNuevaPassword"
+        placeholder="Repite tu contraseña"
+        autocomplete="new-password"
+        minlength="10"
+        maxlength="72"
+        required
+      >
+
+    </div>
+
+    <button type="submit" id="btnGuardarNuevaPassword">
+      Guardar nueva contraseña
+    </button>
+
+    <p
+      id="mensajeNuevaPassword"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <p class="texto-acceso">
+    <button type="button" id="btnVolverLoginPassword">
+      ← Volver a iniciar sesión
+    </button>
+  </p>
+
+</div>
     <!-- REGISTRO DE USUARIOS -->
 
     <div id="panelRegistro" class="oculto">
@@ -405,6 +534,23 @@
             required
           >
         </div>
+        <!-- CONFIRMAR CONTRASEÑA -->
+
+<div class="admin-campo">
+  <label for="confirmarPasswordRegistro">
+    Confirmar contraseña
+  </label>
+
+  <input
+    type="password"
+    id="confirmarPasswordRegistro"
+    placeholder="Repite tu contraseña"
+    autocomplete="new-password"
+    minlength="10"
+    maxlength="72"
+    required
+  >
+</div>
 
         <button type="submit" id="btnRegistrar">
           Crear cuenta

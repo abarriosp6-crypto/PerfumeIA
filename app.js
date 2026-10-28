@@ -9,22 +9,53 @@ const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const rateLimit = require("express-rate-limit");
 const crypto = require("node:crypto");
+const nodemailer = require("nodemailer");
+// ==========================================
+// CONFIGURACIÓN DEL CORREO ELECTRÓNICO
+// ==========================================
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_APP_PASSWORD
+  }
+});
 
 const app = express();
 const PORT = 3000;
+
+// ==========================================
+// VALIDACIÓN DE VARIABLES DE SEGURIDAD
+// ==========================================
 
 if (
   !process.env.GROQ_API_KEY ||
   !process.env.ADMIN_PASSWORD_HASH ||
   !process.env.SESSION_SECRET ||
-  process.env.SESSION_SECRET.length < 32
+  process.env.SESSION_SECRET.length < 32 ||
+  !process.env.EMAIL_USER ||
+  !process.env.EMAIL_APP_PASSWORD
 ) {
   console.error("Faltan variables de seguridad en .env");
   process.exit(1);
 }
 
+console.log("Variables de seguridad verificadas correctamente.");
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
+});
+// ==========================================
+// CORREO ELECTRÓNICO - PERFUMEIA
+// ==========================================
+
+const correoTransporte = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_APP_PASSWORD
+  }
 });
 
 app.disable("x-powered-by");
@@ -141,6 +172,40 @@ db.serialize(() => {
       respuesta TEXT NOT NULL
     )
   `);
+  // ==========================================
+// ASOCIAR EL HISTORIAL A CADA USUARIO
+// ==========================================
+
+db.all("PRAGMA table_info(historial)", [], (error, columnas) => {
+  if (error) {
+    console.error("Error al verificar historial:", error.message);
+    return;
+  }
+
+  const tieneUsuarioId = columnas.some(
+    columna => columna.name === "usuario_id"
+  );
+
+  if (!tieneUsuarioId) {
+    db.run(
+      "ALTER TABLE historial ADD COLUMN usuario_id INTEGER",
+      error => {
+        if (error) {
+          console.error(
+            "Error al actualizar historial:",
+            error.message
+          );
+        } else {
+          console.log(
+            "Historial actualizado para identificar usuarios."
+          );
+        }
+      }
+    );
+  } else {
+    console.log("Historial de usuarios verificado correctamente.");
+  }
+});
   // Tabla de usuarios registrados
 db.run(`
   CREATE TABLE IF NOT EXISTS usuarios (
@@ -160,6 +225,35 @@ db.run(`
     );
   } else {
     console.log("Tabla de usuarios verificada correctamente.");
+  }
+});
+// ==========================================
+// RECUPERACIÓN DE CONTRASEÑAS
+// ==========================================
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS recuperacion_password (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    fecha_expiracion INTEGER NOT NULL,
+    utilizado INTEGER NOT NULL DEFAULT 0
+      CHECK (utilizado IN (0, 1)),
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id)
+      REFERENCES usuarios(id)
+      ON DELETE CASCADE
+  )
+`, (error) => {
+  if (error) {
+    console.error(
+      "Error al crear la tabla de recuperación:",
+      error.message
+    );
+  } else {
+    console.log(
+      "Tabla de recuperación de contraseñas verificada correctamente."
+    );
   }
 });
 
@@ -489,6 +583,283 @@ app.post("/api/usuarios/login", limitarLogin, (req, res) => {
     }
   );
 });
+// ==========================================
+// SOLICITAR RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+const limitarRecuperacion = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    error: "Demasiadas solicitudes. Intenta nuevamente más tarde."
+  }
+});
+
+// ==========================================
+// LIMITAR SOLICITUDES DE RECUPERACIÓN
+// ==========================================
+const limitarRestablecimiento = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    error: "Demasiados intentos. Intenta nuevamente más tarde."
+  }
+});
+
+// ==========================================
+// SOLICITAR RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+app.post("/api/usuarios/recuperar-password", limitarRecuperacion, (req, res) => {
+  const { correo } = req.body || {};
+
+  if (
+    typeof correo !== "string" ||
+    correo.trim().length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())
+  ) {
+    return res.status(400).json({
+      error: "Ingresa un correo electrónico válido."
+    });
+  }
+
+  const correoLimpio = correo.trim().toLowerCase();
+
+  const mensaje = {
+    mensaje: "Si el correo está registrado, recibirás un enlace para recuperar tu contraseña."
+  };
+
+  db.get(
+    "SELECT id, nombre, correo FROM usuarios WHERE correo = ?",
+    [correoLimpio],
+    (error, usuario) => {
+      if (error) {
+        console.error("Error al consultar usuario:", error.message);
+
+        return res.status(500).json({
+          error: "No se pudo procesar la solicitud."
+        });
+      }
+
+      if (!usuario) {
+        return res.json(mensaje);
+      }
+
+      const token = crypto.randomBytes(32).toString("hex");
+
+      const tokenHash = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+      const expiracion = Date.now() + 15 * 60 * 1000;
+
+      db.run(
+        `INSERT INTO recuperacion_password
+         (usuario_id, token_hash, fecha_expiracion)
+         VALUES (?, ?, ?)`,
+        [usuario.id, tokenHash, expiracion],
+        function (error) {
+          if (error) {
+            console.error("Error al guardar token:", error.message);
+
+            return res.status(500).json({
+              error: "No se pudo procesar la solicitud."
+            });
+          }
+
+          const recuperacionId = this.lastID;
+
+          const enlace =
+            `http://localhost:3000/?recuperar=${encodeURIComponent(token)}`;
+
+          transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: usuario.correo,
+            subject: "Recuperación de contraseña - PerfumeIA",
+            text: `Hola ${usuario.nombre}:
+
+Recibimos una solicitud para recuperar tu contraseña de PerfumeIA.
+
+Utiliza el siguiente enlace:
+
+${enlace}
+
+Este enlace vence en 15 minutos.
+
+Si no solicitaste este cambio, puedes ignorar este mensaje.
+
+Equipo PerfumeIA`
+          })
+          .then(() => {
+            return res.json(mensaje);
+          })
+          .catch(error => {
+            console.error("Error al enviar correo:", error.message);
+
+            db.run(
+              `UPDATE recuperacion_password
+               SET utilizado = 1
+               WHERE id = ?`,
+              [recuperacionId],
+              errorBD => {
+                if (errorBD) {
+                  console.error(
+                    "Error al invalidar token:",
+                    errorBD.message
+                  );
+                }
+              }
+            );
+
+            return res.status(500).json({
+              error: "No se pudo enviar el correo de recuperación."
+            });
+          });
+        }
+      );
+    }
+  );
+});
+
+// ==========================================
+// RESTABLECER CONTRASEÑA CON TOKEN
+// ==========================================
+
+app.post(
+  "/api/usuarios/restablecer-password",
+  limitarRestablecimiento,
+  async (req, res) => {
+    const { token, password } = req.body || {};
+
+    if (
+      typeof token !== "string" ||
+      !/^[a-f0-9]{64}$/i.test(token) ||
+      typeof password !== "string" ||
+      password.length < 8 ||
+      Buffer.byteLength(password, "utf8") > 72
+    ) {
+      return res.status(400).json({
+        error: "Enlace inválido o contraseña no válida (mínimo 8 caracteres y máximo 72 bytes)."
+      });
+    }
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const ahora = Date.now();
+
+    try {
+      const nuevoHash = await bcrypt.hash(password, 12);
+
+      db.serialize(() => {
+        db.run("BEGIN IMMEDIATE TRANSACTION", error => {
+          if (error) {
+            console.error("Error al iniciar transacción:", error.message);
+
+            return res.status(500).json({
+              error: "No se pudo restablecer la contraseña."
+            });
+          }
+
+          db.get(
+            `SELECT id, usuario_id
+             FROM recuperacion_password
+             WHERE token_hash = ?
+               AND utilizado = 0
+               AND fecha_expiracion > ?`,
+            [tokenHash, ahora],
+            (error, recuperacion) => {
+              if (error || !recuperacion) {
+                return db.run("ROLLBACK", () => {
+                  return res.status(error ? 500 : 400).json({
+                    error: error
+                      ? "No se pudo validar el enlace."
+                      : "El enlace es inválido, ya fue utilizado o ha vencido."
+                  });
+                });
+              }
+
+              db.run(
+                `UPDATE recuperacion_password
+                 SET utilizado = 1
+                 WHERE id = ? AND utilizado = 0`,
+                [recuperacion.id],
+                function (error) {
+                  if (error || this.changes !== 1) {
+                    return db.run("ROLLBACK", () => {
+                      return res.status(500).json({
+                        error: "No se pudo utilizar el enlace."
+                      });
+                    });
+                  }
+
+                  db.run(
+                    `UPDATE usuarios
+                     SET password_hash = ?
+                     WHERE id = ?`,
+                    [nuevoHash, recuperacion.usuario_id],
+                    function (error) {
+                      if (error || this.changes !== 1) {
+                        return db.run("ROLLBACK", () => {
+                          return res.status(500).json({
+                            error: "No se pudo actualizar la contraseña."
+                          });
+                        });
+                      }
+
+                      db.run(
+                        `UPDATE recuperacion_password
+                         SET utilizado = 1
+                         WHERE usuario_id = ?`,
+                        [recuperacion.usuario_id],
+                        error => {
+                          if (error) {
+                            return db.run("ROLLBACK", () => {
+                              return res.status(500).json({
+                                error: "No se pudo completar la operación."
+                              });
+                            });
+                          }
+
+                          db.run("COMMIT", error => {
+                            if (error) {
+                              return db.run("ROLLBACK", () => {
+                                return res.status(500).json({
+                                  error: "No se pudo guardar la contraseña."
+                                });
+                              });
+                            }
+
+                            return res.json({
+                              mensaje: "Contraseña restablecida correctamente. Ya puedes iniciar sesión."
+                            });
+                          });
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      });
+    } catch (error) {
+      console.error("Error al restablecer contraseña:", error.message);
+
+      return res.status(500).json({
+        error: "No se pudo restablecer la contraseña."
+      });
+    }
+  }
+);
 // ==========================================
 // VERIFICAR SESIÓN DEL USUARIO
 // ==========================================
@@ -971,32 +1342,112 @@ app.post(
       messages: [
         {
           role: "system",
-          content: `
-Eres PerfumeIA, un asistente especializado
-en recomendaciones de perfumes.
+content: `
+Eres PerfumeIA, un asistente inteligente especializado
+en perfumes y recomendaciones personalizadas.
 
-Recomienda EXACTAMENTE 2 perfumes según
-los gustos, ocasión, clima y necesidades
-indicadas por el cliente.
+OBJETIVO PRINCIPAL:
 
-Responde SIEMPRE con este formato:
+Recomendar los perfumes que mejor se adapten
+a las necesidades y preferencias del usuario.
 
-PERFUME 1: Nombre del perfume
-TIPO: Tipo de aroma
-MOTIVO: Explicación breve de por qué lo recomiendas
+REGLA FUNDAMENTAL:
 
-PERFUME 2: Nombre del perfume
-TIPO: Tipo de aroma
-MOTIVO: Explicación breve de por qué lo recomiendas
+Las preferencias expresadas por el cliente tienen
+prioridad sobre cualquier criterio general.
 
-REGLAS:
+ANÁLISIS DE PREFERENCIAS:
+
+Antes de recomendar, identifica:
+
+1. Tipo de aroma solicitado.
+2. Duración deseada.
+3. Ocasión de uso.
+4. Clima.
+5. Intensidad y proyección.
+6. Género o preferencia de fragancia.
+
+PRIORIZACIÓN:
+
+- Identifica las características que el usuario
+  considera más importantes.
+
+- Si el usuario utiliza expresiones como
+  "principalmente", "lo más importante",
+  "sobre todo", "priorizo" o "indispensable",
+  da mayor importancia a esa característica.
+
+- Si solicita máxima duración, prioriza perfumes
+  conocidos por su buena permanencia en la piel.
+
+- Si solicita frescura, prioriza fragancias frescas.
+
+- Si solicita aromas dulces, prioriza perfumes
+  con perfiles dulces.
+
+- Si solicita elegancia, considera fragancias
+  adecuadas para ocasiones formales.
+
+- Si solicita varias características, busca
+  el mejor equilibrio entre ellas.
+
+- No priorices automáticamente la duración
+  cuando el usuario no la solicite.
+
+ORDEN DEL TOP:
+
+TOP 1:
+El perfume que mejor cumple las preferencias
+y prioridades expresadas por el usuario.
+
+TOP 2:
+La segunda opción más compatible.
+
+TOP 3:
+La tercera opción más compatible.
+
+TOP 4:
+La cuarta opción más compatible.
+
+CANTIDAD DE RECOMENDACIONES:
+
+- Recomienda un máximo de 4 perfumes.
+- Si existen 4 opciones adecuadas, recomienda 4.
+- Si solamente existen 3, recomienda 3.
+- Si solamente existen 2, recomienda 2.
+- Si existe una sola opción, recomienda 1.
+- No inventes perfumes para completar el TOP 4.
+
+FORMATO OBLIGATORIO:
+
+PERFUME 1: Nombre del perfume y marca
+TIPO: Familia olfativa y características
+OCASIÓN: Situaciones recomendadas
+DURACIÓN: Duración aproximada, si se conoce
+MOTIVO: Explica por qué cumple las prioridades del usuario
+
+Repite el mismo formato para PERFUME 2,
+PERFUME 3 y PERFUME 4 cuando corresponda.
+
+REGLAS ADICIONALES:
+
+- Responde siempre en español.
+- Utiliza nombres de perfumes reales.
+- No inventes características.
+- No inventes disponibilidad.
+- No incluyas precios.
 - No utilices Markdown.
 - No utilices asteriscos.
 - No utilices listas con guiones.
-- No agregues precios.
-- No agregues texto antes de PERFUME 1.
-- No agregues texto después del segundo MOTIVO.
-- Las recomendaciones deben ser claras y breves.
+- No repitas perfumes.
+- No asegures duraciones exactas.
+- Ordena siempre por compatibilidad con el cliente.
+- Si una recomendación cumple menos requisitos
+  que otra, no debe ocupar una posición superior
+  sin una razón clara.
+- Explica brevemente en MOTIVO qué preferencias
+  del usuario cumple cada perfume.
+- No agregues introducciones ni despedidas.
 `
         },
         {
@@ -1013,10 +1464,16 @@ REGLAS:
       throw new Error("La IA devolvió una respuesta vacía.");
     }
 
-    db.run(`
-      INSERT INTO historial (consulta, respuesta)
-      VALUES (?, ?)
-    `, [consulta.trim(), recomendacion], function(error) {
+// Identificar al usuario que realizó la consulta.
+// Las consultas del administrador quedan sin usuario asignado.
+const usuarioId = req.session?.administrador === true
+  ? null
+  : req.session.usuarioId;
+
+db.run(`
+  INSERT INTO historial (consulta, respuesta, usuario_id)
+  VALUES (?, ?, ?)
+`, [consulta.trim(), recomendacion, usuarioId], function(error) {
       if (error) {
         return res.status(500).json({
           error: "No fue posible guardar la recomendación."
@@ -1043,20 +1500,48 @@ REGLAS:
 // ==========================================
 // HISTORIAL PRIVADO
 // ==========================================
+// ==========================================
+// HISTORIAL DE RECOMENDACIONES POR USUARIO
+// ==========================================
 
-app.get("/api/historial", requiereAdmin, (req, res) => {
-  db.all(`
-    SELECT id, fecha, consulta, respuesta
-    FROM historial
-    ORDER BY id DESC
-  `, [], (error, filas) => {
+app.get("/api/historial", (req, res) => {
+
+  const esAdmin = req.session?.administrador === true;
+  const usuarioId = req.session?.usuarioId;
+
+  // Verificar que exista una sesión válida.
+  if (!esAdmin && !usuarioId) {
+    return res.status(401).json({
+      error: "Debes iniciar sesión para consultar el historial."
+    });
+  }
+
+  // El administrador puede consultar el historial general.
+  // Cada usuario únicamente puede consultar sus recomendaciones.
+  const sql = esAdmin
+    ? `SELECT id, fecha, consulta, respuesta
+       FROM historial
+       ORDER BY id DESC`
+    : `SELECT id, fecha, consulta, respuesta
+       FROM historial
+       WHERE usuario_id = ?
+       ORDER BY id DESC`;
+
+  const parametros = esAdmin ? [] : [usuarioId];
+
+  db.all(sql, parametros, (error, filas) => {
+
     if (error) {
+      console.error("Error al consultar historial:", error.message);
+
       return res.status(500).json({
         error: "No fue posible consultar el historial."
       });
     }
 
-    res.json(filas);
+    res.json({
+      historial: filas
+    });
   });
 });
 // ==========================================

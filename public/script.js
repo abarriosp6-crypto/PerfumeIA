@@ -67,6 +67,8 @@ const mensajeLogin = document.getElementById("mensajeLogin");
 const nombreRegistro = document.getElementById("nombreRegistro");
 const correoRegistro = document.getElementById("correoRegistro");
 const passwordRegistro = document.getElementById("passwordRegistro");
+const confirmarPasswordRegistro =
+  document.getElementById("confirmarPasswordRegistro");
 const btnRegistrar = document.getElementById("btnRegistrar");
 const mensajeRegistro = document.getElementById("mensajeRegistro");
 
@@ -146,18 +148,26 @@ function volverInicio() {
 }
 
 
+/* ==========================================
+   ACTUALIZAR MENÚ SEGÚN LA SESIÓN
+========================================== */
+
 function actualizarMenuAdmin() {
   const esUsuario = Boolean(usuarioActual) && !esAdministrador;
+  const sesionActiva = esAdministrador || esUsuario;
 
-  // Opciones exclusivas del administrador
-  btnHistorial.classList.toggle("oculto", !esAdministrador);
+  // El historial estará disponible para usuarios y administradores
+  btnHistorial.classList.toggle("oculto", !sesionActiva);
+
+  // Administración continúa siendo exclusiva del administrador
   btnAdministracion.classList.toggle("oculto", !esAdministrador);
 
-  // Inicio y cierre de sesión
-  btnLogout.classList.toggle("oculto", !esAdministrador && !esUsuario);
-  btnLogin.classList.toggle("oculto", esAdministrador || esUsuario);
-}
+  // Mostrar cerrar sesión cuando corresponda
+  btnLogout.classList.toggle("oculto", !sesionActiva);
 
+  // Ocultar iniciar sesión cuando ya existe una sesión
+  btnLogin.classList.toggle("oculto", sesionActiva);
+}
 
 function mostrarError(error) {
   console.error(error);
@@ -230,7 +240,8 @@ btnLogin.addEventListener("click", () => {
   // Mostrar primero el formulario de usuarios
   panelRegistro.classList.add("oculto");
   panelLogin.classList.remove("oculto");
-
+panelNuevaPassword.classList.add("oculto");
+panelLogin.classList.remove("oculto");
   document.getElementById("tituloAcceso").textContent =
     "Iniciar sesión";
 
@@ -1050,8 +1061,8 @@ document.querySelectorAll(".chip").forEach(boton => {
 });
 
 /* ==========================================
-   FORMATO DE RECOMENDACIONES
-========================================== */
+// FORMATO DE RECOMENDACIONES - TOP 4
+// ==========================================*/
 
 function formatearRespuesta(texto) {
   const lineas = String(texto ?? "")
@@ -1059,7 +1070,8 @@ function formatearRespuesta(texto) {
     .map(linea => linea.trim())
     .filter(Boolean);
 
-  let html = "";
+  const perfumes = [];
+  let perfumeActual = null;
 
   lineas.forEach(linea => {
     const limpia = linea
@@ -1067,55 +1079,103 @@ function formatearRespuesta(texto) {
       .replace(/^[-•]\s*/, "")
       .trim();
 
+    // Reconocer PERFUME 1, 2, 3 o 4
     const nombre = limpia.match(
-      /^(?:PERFUME\s*[12]\s*:|[12][.)]\s+)(.*)$/i
+      /^(?:PERFUME|TOP)\s*([1-4])\s*[:.)—-]\s*(.+)$/i
     );
 
     if (nombre) {
-      html += `
-        <div class="nombre-perfume">
-          ${escapeHTML(nombre[1].trim())}
-        </div>
-      `;
+      perfumeActual = {
+        numero: Number(nombre[1]),
+        nombre: nombre[2].trim(),
+        tipo: "",
+        ocasion: "",
+        duracion: "",
+        motivo: ""
+      };
+
+      perfumes.push(perfumeActual);
       return;
     }
 
-    const tipo = limpia.match(
-      /^(?:TIPO|Tipo de aroma)\s*:\s*(.*)$/i
+    if (!perfumeActual) return;
+
+    const detalle = limpia.match(
+      /^(TIPO|Tipo de aroma|OCASI[ÓO]N|DURACI[ÓO]N|MOTIVO)\s*:\s*(.+)$/i
     );
 
-    if (tipo) {
-      html += `
-        <div class="detalle-perfume">
-          <strong>Tipo de aroma:</strong>
-          ${escapeHTML(tipo[1])}
-        </div>
-      `;
-      return;
+    if (!detalle) return;
+
+    const campo = detalle[1].toUpperCase();
+    const valor = detalle[2].trim();
+
+    if (campo === "TIPO" || campo === "TIPO DE AROMA") {
+      perfumeActual.tipo = valor;
+    } else if (campo === "OCASIÓN" || campo === "OCASION") {
+      perfumeActual.ocasion = valor;
+    } else if (campo === "DURACIÓN" || campo === "DURACION") {
+      perfumeActual.duracion = valor;
+    } else if (campo === "MOTIVO") {
+      perfumeActual.motivo = valor;
     }
-
-    const motivo = limpia.match(
-      /^MOTIVO\s*:\s*(.*)$/i
-    );
-
-    if (motivo) {
-      html += `
-        <div class="detalle-perfume">
-          <strong>¿Por qué lo recomendamos?</strong>
-          ${escapeHTML(motivo[1])}
-        </div>
-      `;
-      return;
-    }
-
-    html += `
-      <div class="detalle-perfume">
-        ${escapeHTML(limpia)}
-      </div>
-    `;
   });
 
-  return html || "<p>No se recibió una recomendación.</p>";
+  if (perfumes.length === 0) {
+    return `
+      <p class="sin-recomendaciones">
+        ${escapeHTML(String(texto || "No se encontraron recomendaciones."))}
+      </p>
+    `;
+  }
+
+  return `
+    <div class="contenedor-recomendaciones">
+      ${perfumes.slice(0, 4).map((perfume, indice) => `
+        <article class="tarjeta-recomendacion">
+
+          <div class="encabezado-recomendacion">
+            <span class="numero-recomendacion">
+              TOP ${indice + 1}
+            </span>
+
+            <h3>${escapeHTML(perfume.nombre)}</h3>
+          </div>
+
+          <div class="contenido-recomendacion">
+
+            ${perfume.tipo ? `
+              <p>
+                <strong>🌸 Tipo de aroma:</strong>
+                ${escapeHTML(perfume.tipo)}
+              </p>
+            ` : ""}
+
+            ${perfume.ocasion ? `
+              <p>
+                <strong>📅 Ocasión:</strong>
+                ${escapeHTML(perfume.ocasion)}
+              </p>
+            ` : ""}
+
+            ${perfume.duracion ? `
+              <p>
+                <strong>⏱️ Duración:</strong>
+                ${escapeHTML(perfume.duracion)}
+              </p>
+            ` : ""}
+
+            ${perfume.motivo ? `
+              <p>
+                <strong>✨ ¿Por qué lo recomendamos?</strong>
+                ${escapeHTML(perfume.motivo)}
+              </p>
+            ` : ""}
+
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
 }
 
 /* ==========================================
@@ -1170,11 +1230,14 @@ btnRecomendar.addEventListener("click", async () => {
 });
 
 /* ==========================================
-   HISTORIAL PRIVADO
+   HISTORIAL DE RECOMENDACIONES
 ========================================== */
 
 btnHistorial.addEventListener("click", async () => {
-  if (!esAdministrador) {
+
+  // Verificar que exista una sesión activa
+  if (!esAdministrador && !usuarioActual) {
+    alert("Debes iniciar sesión para consultar tu historial.");
     return;
   }
 
@@ -1190,6 +1253,8 @@ btnHistorial.addEventListener("click", async () => {
 
     if (respuesta.status === 401) {
       esAdministrador = false;
+      usuarioActual = null;
+
       actualizarMenuAdmin();
       volverInicio();
 
@@ -1199,43 +1264,103 @@ btnHistorial.addEventListener("click", async () => {
 
     const datos = await leerJSON(respuesta);
 
-    if (!Array.isArray(datos)) {
+    // Obtener las recomendaciones del servidor
+    const registros = datos.historial;
+
+    if (!Array.isArray(registros)) {
       throw new Error("El historial tiene un formato incorrecto.");
     }
 
     listaHistorial.innerHTML = "";
 
-    if (datos.length === 0) {
+    if (registros.length === 0) {
       listaHistorial.innerHTML =
-        "<p>No hay consultas guardadas todavía.</p>";
+        "<p>Todavía no tienes recomendaciones guardadas.</p>";
       return;
     }
 
-    datos.forEach(registro => {
-      const elemento = document.createElement("div");
-      elemento.className = "historial-item";
+registros.forEach(registro => {
 
-      const fecha = new Date(registro.fecha);
+  const elemento = document.createElement("div");
+  elemento.className = "historial-item";
 
-      const fechaTexto = Number.isNaN(fecha.getTime())
-        ? String(registro.fecha ?? "")
-        : fecha.toLocaleString("es-GT");
+  const fecha = new Date(registro.fecha);
 
-      elemento.innerHTML = `
-        <h3>${escapeHTML(registro.consulta)}</h3>
+  const fechaTexto = Number.isNaN(fecha.getTime())
+    ? String(registro.fecha ?? "")
+    : fecha.toLocaleString("es-GT");
+
+  const consultaCompleta = String(registro.consulta ?? "");
+
+  const consultaResumida =
+    consultaCompleta.length > 90
+      ? consultaCompleta.substring(0, 90) + "..."
+      : consultaCompleta;
+
+  elemento.innerHTML = `
+    <div class="historial-resumen">
+
+      <div class="historial-info">
 
         <small>
           Consulta #${escapeHTML(registro.id)}
           · ${escapeHTML(fechaTexto)}
         </small>
 
-        <div class="respuesta-historial">
-          ${formatearRespuesta(registro.respuesta)}
-        </div>
-      `;
+        <h3>${escapeHTML(consultaResumida)}</h3>
 
-      listaHistorial.appendChild(elemento);
-    });
+      </div>
+
+      <button
+        type="button"
+        class="btn-ver-detalles"
+        aria-expanded="false"
+      >
+        Ver detalles ▼
+      </button>
+
+    </div>
+
+    <div class="historial-detalles oculto">
+
+      <p>
+        <strong>Consulta realizada:</strong>
+        ${escapeHTML(consultaCompleta)}
+      </p>
+
+      <div class="respuesta-historial">
+        ${formatearRespuesta(registro.respuesta)}
+      </div>
+
+    </div>
+  `;
+
+  const btnDetalles =
+    elemento.querySelector(".btn-ver-detalles");
+
+  const detalles =
+    elemento.querySelector(".historial-detalles");
+
+  btnDetalles.addEventListener("click", () => {
+
+    const abierto = !detalles.classList.contains("oculto");
+
+    detalles.classList.toggle("oculto", abierto);
+
+    btnDetalles.textContent = abierto
+      ? "Ver detalles ▼"
+      : "Ocultar detalles ▲";
+
+    btnDetalles.setAttribute(
+      "aria-expanded",
+      String(!abierto)
+    );
+
+  });
+
+  listaHistorial.appendChild(elemento);
+
+});
 
   } catch (error) {
     listaHistorial.innerHTML = `
@@ -1267,7 +1392,16 @@ formRegistro.addEventListener("submit", async evento => {
   const nombre = nombreRegistro.value.trim();
   const correo = correoRegistro.value.trim();
   const password = passwordRegistro.value;
+const confirmacion = confirmarPasswordRegistro.value;
 
+// Verificar que ambas contraseñas coincidan
+if (password !== confirmacion) {
+  mensajeRegistro.textContent =
+    "Las contraseñas no coinciden. Verifica e intenta nuevamente.";
+
+  confirmarPasswordRegistro.focus();
+  return;
+}
   mensajeRegistro.textContent = "";
   btnRegistrar.disabled = true;
   btnRegistrar.textContent = "Registrando...";
@@ -1309,7 +1443,11 @@ formRegistro.addEventListener("submit", async evento => {
 /* MOSTRAR REGISTRO */
 
 btnMostrarRegistro.addEventListener("click", () => {
+
   panelLogin.classList.add("oculto");
+  panelRecuperacion.classList.add("oculto");
+  panelNuevaPassword.classList.add("oculto");
+
   panelRegistro.classList.remove("oculto");
 
   document.getElementById("tituloAcceso").textContent =
@@ -1317,12 +1455,17 @@ btnMostrarRegistro.addEventListener("click", () => {
 
   document.getElementById("descripcionAcceso").textContent =
     "Regístrate para utilizar las recomendaciones de PerfumeIA.";
+
 });
 
 /* VOLVER AL INICIO DE SESIÓN */
 
 btnMostrarLogin.addEventListener("click", () => {
+
   panelRegistro.classList.add("oculto");
+  panelRecuperacion.classList.add("oculto");
+  panelNuevaPassword.classList.add("oculto");
+
   panelLogin.classList.remove("oculto");
 
   document.getElementById("tituloAcceso").textContent =
@@ -1330,6 +1473,7 @@ btnMostrarLogin.addEventListener("click", () => {
 
   document.getElementById("descripcionAcceso").textContent =
     "Ingresa con tu cuenta para utilizar las recomendaciones de IA.";
+
 });
 
 // ==========================================
@@ -1401,3 +1545,265 @@ btnAgregarPresentacion.addEventListener("click", () => {
   inputNuevaPresentacion.value = "";
   inputNuevaPresentacion.focus();
 });
+// ==========================================
+// PERFUMEIA - RECUPERACIÓN DE CONTRASEÑAS
+// ==========================================
+
+const panelRecuperacion = document.getElementById("panelRecuperacion");
+const panelNuevaPassword = document.getElementById("panelNuevaPassword");
+
+const btnMostrarRecuperacion = document.getElementById("btnMostrarRecuperacion");
+const btnVolverLogin = document.getElementById("btnVolverLogin");
+const btnVolverLoginPassword = document.getElementById("btnVolverLoginPassword");
+
+const formRecuperacion = document.getElementById("formRecuperacion");
+const formNuevaPassword = document.getElementById("formNuevaPassword");
+
+const correoRecuperacion = document.getElementById("correoRecuperacion");
+const nuevaPassword = document.getElementById("nuevaPassword");
+const confirmarNuevaPassword = document.getElementById("confirmarNuevaPassword");
+
+const mensajeRecuperacion = document.getElementById("mensajeRecuperacion");
+const mensajeNuevaPassword = document.getElementById("mensajeNuevaPassword");
+
+const btnEnviarRecuperacion = document.getElementById("btnEnviarRecuperacion");
+const btnGuardarNuevaPassword = document.getElementById("btnGuardarNuevaPassword");
+
+let tokenRecuperacion = null;
+
+// ==========================================
+// MOSTRAR PANELES DE ACCESO
+// ==========================================
+
+function mostrarPanelAcceso(panel, titulo, descripcion) {
+  panelLogin.classList.add("oculto");
+  panelRegistro.classList.add("oculto");
+  panelRecuperacion.classList.add("oculto");
+  panelNuevaPassword.classList.add("oculto");
+
+  panel.classList.remove("oculto");
+
+  document.getElementById("tituloAcceso").textContent = titulo;
+  document.getElementById("descripcionAcceso").textContent = descripcion;
+
+  mostrarSeccion(loginAdmin, btnLogin);
+}
+
+// ==========================================
+// ABRIR RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+btnMostrarRecuperacion.addEventListener("click", () => {
+  mensajeRecuperacion.textContent = "";
+
+  mostrarPanelAcceso(
+    panelRecuperacion,
+    "Recuperar contraseña",
+    "Te enviaremos un enlace para recuperar tu cuenta."
+  );
+
+  correoRecuperacion.focus();
+});
+
+// ==========================================
+// VOLVER AL INICIO DE SESIÓN
+// ==========================================
+
+function regresarAlLogin() {
+  tokenRecuperacion = null;
+
+  formNuevaPassword.reset();
+
+  // Quitar el token de la barra de direcciones.
+  const url = new URL(window.location.href);
+  url.searchParams.delete("recuperar");
+
+  window.history.replaceState(
+    {},
+    "",
+    url.pathname + url.search + url.hash
+  );
+
+  mostrarPanelAcceso(
+    panelLogin,
+    "Iniciar sesión",
+    "Ingresa con tu cuenta para utilizar las recomendaciones de IA."
+  );
+
+  correoLogin.focus();
+}
+
+btnVolverLogin.addEventListener("click", regresarAlLogin);
+btnVolverLoginPassword.addEventListener("click", regresarAlLogin);
+
+// ==========================================
+// SOLICITAR ENLACE DE RECUPERACIÓN
+// ==========================================
+
+formRecuperacion.addEventListener("submit", async evento => {
+  evento.preventDefault();
+
+  const correo = correoRecuperacion.value.trim();
+
+  mensajeRecuperacion.textContent = "";
+  btnEnviarRecuperacion.disabled = true;
+  btnEnviarRecuperacion.textContent = "Enviando...";
+
+  try {
+    const respuesta = await fetch(
+      "/api/usuarios/recuperar-password",
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ correo })
+      }
+    );
+
+    const datos = await leerJSON(respuesta);
+
+    mensajeRecuperacion.textContent = datos.mensaje;
+
+    formRecuperacion.reset();
+
+  } catch (error) {
+    mensajeRecuperacion.textContent = mostrarError(error);
+
+  } finally {
+    btnEnviarRecuperacion.disabled = false;
+    btnEnviarRecuperacion.textContent = "Enviar enlace de recuperación";
+  }
+});
+
+// ==========================================
+// ABRIR ENLACE RECIBIDO POR CORREO
+// ==========================================
+
+function comprobarEnlaceRecuperacion() {
+  const parametros = new URLSearchParams(window.location.search);
+  const token = parametros.get("recuperar");
+
+  if (!token) {
+    return;
+  }
+
+  // Retirar el token de la URL visible.
+  const url = new URL(window.location.href);
+  url.searchParams.delete("recuperar");
+
+  window.history.replaceState(
+    {},
+    "",
+    url.pathname + url.search + url.hash
+  );
+
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    mostrarPanelAcceso(
+      panelRecuperacion,
+      "Enlace inválido",
+      "Solicita un nuevo enlace de recuperación."
+    );
+
+    mensajeRecuperacion.textContent =
+      "El enlace de recuperación no es válido.";
+
+    return;
+  }
+
+  tokenRecuperacion = token;
+
+  mostrarPanelAcceso(
+    panelNuevaPassword,
+    "Nueva contraseña",
+    "Establece una nueva contraseña para tu cuenta."
+  );
+
+  nuevaPassword.focus();
+}
+
+// ==========================================
+// GUARDAR NUEVA CONTRASEÑA
+// ==========================================
+
+formNuevaPassword.addEventListener("submit", async evento => {
+  evento.preventDefault();
+
+  const password = nuevaPassword.value;
+  const confirmacion = confirmarNuevaPassword.value;
+
+  mensajeNuevaPassword.textContent = "";
+
+  if (!tokenRecuperacion) {
+    mensajeNuevaPassword.textContent =
+      "El enlace no es válido. Solicita uno nuevo.";
+    return;
+  }
+
+  if (password !== confirmacion) {
+    mensajeNuevaPassword.textContent =
+      "Las contraseñas no coinciden.";
+    return;
+  }
+
+  if (
+    password.length < 10 ||
+    BufferByteLength(password) > 72
+  ) {
+    mensajeNuevaPassword.textContent =
+      "La contraseña debe tener al menos 10 caracteres y no superar 72 bytes.";
+    return;
+  }
+
+  btnGuardarNuevaPassword.disabled = true;
+  btnGuardarNuevaPassword.textContent = "Guardando...";
+
+  try {
+    const respuesta = await fetch(
+      "/api/usuarios/restablecer-password",
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          token: tokenRecuperacion,
+          password
+        })
+      }
+    );
+
+    const datos = await leerJSON(respuesta);
+
+    tokenRecuperacion = null;
+    formNuevaPassword.reset();
+
+    regresarAlLogin();
+
+    mensajeLogin.textContent =
+      datos.mensaje || "Contraseña actualizada correctamente.";
+
+  } catch (error) {
+    mensajeNuevaPassword.textContent = mostrarError(error);
+
+  } finally {
+    btnGuardarNuevaPassword.disabled = false;
+    btnGuardarNuevaPassword.textContent = "Guardar nueva contraseña";
+  }
+});
+
+// ==========================================
+// CONTAR BYTES DE CONTRASEÑA EN EL NAVEGADOR
+// ==========================================
+
+function BufferByteLength(texto) {
+  return new TextEncoder().encode(texto).length;
+}
+
+// ==========================================
+// INICIALIZAR RECUPERACIÓN
+// ==========================================
+
+comprobarEnlaceRecuperacion();
