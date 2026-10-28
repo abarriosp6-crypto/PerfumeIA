@@ -1522,3 +1522,558 @@ body.vista-secundaria #loginAdmin {
     padding: 20px;
   }
 }
+/* ==========================================
+   PERFUMEIA - CHAT CONVERSACIONAL
+========================================== */
+
+.chat-conversacion {
+  background: #ffffff;
+  margin-top: 25px;
+  padding: 30px;
+  border: 1px solid #ecebf2;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(50, 45, 90, 0.05);
+}
+
+/* Encabezado del chat */
+
+.chat-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #efedf4;
+}
+
+.chat-encabezado h2 {
+  margin-top: 7px;
+  font-size: 21px;
+  color: #252438;
+}
+
+.chat-encabezado p {
+  margin-top: 8px;
+  color: #8b8798;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.chat-estado {
+  background: #ecfff5;
+  color: #21895b;
+  padding: 9px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Área de mensajes */
+
+.chat-mensajes {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 25px;
+  max-height: 650px;
+  overflow-y: auto;
+  padding: 8px 10px 15px 0;
+  scroll-behavior: smooth;
+}
+
+/* Cada mensaje */
+
+.chat-mensaje {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Mensajes del usuario */
+
+.chat-mensaje.usuario {
+  justify-content: flex-end;
+}
+
+.chat-mensaje.usuario .chat-burbuja {
+  background: #6657df;
+  color: #ffffff;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 75%;
+}
+
+/* Mensajes de PerfumeIA */
+
+.chat-mensaje.asistente {
+  justify-content: flex-start;
+}
+
+.chat-mensaje.asistente .chat-burbuja {
+  background: #f8f7ff;
+  color: #393548;
+  border: 1px solid #e9e5fc;
+  border-radius: 16px 16px 16px 4px;
+  max-width: 95%;
+}
+
+/* Burbuja general */
+
+.chat-burbuja {
+  padding: 17px 20px;
+  font-size: 16px;
+line-height: 1.8;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chat-burbuja:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(90, 75, 180, 0.09);
+}
+
+/* Nombre del participante */
+
+.chat-autor {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chat-mensaje.usuario .chat-autor {
+  color: #ffffff;
+}
+
+.chat-mensaje.asistente .chat-autor {
+  color: #6254d9;
+}
+
+/* Tarjetas de recomendaciones dentro del chat */
+
+.chat-mensaje.asistente .contenedor-recomendaciones {
+  margin-top: 15px;
+  white-space: normal;
+}
+
+.chat-mensaje.asistente .tarjeta-recomendacion {
+  background: #ffffff;
+}
+
+/* Barra de desplazamiento */
+
+.chat-mensajes::-webkit-scrollbar {
+  width: 7px;
+}
+
+.chat-mensajes::-webkit-scrollbar-track {
+  background: #f5f3fc;
+  border-radius: 10px;
+}
+
+.chat-mensajes::-webkit-scrollbar-thumb {
+  background: #c7c0f1;
+  border-radius: 10px;
+}
+
+/* Diseño para celulares */
+
+@media (max-width: 768px) {
+
+  .chat-conversacion {
+    padding: 20px;
+  }
+
+  .chat-encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chat-mensajes {
+    max-height: 500px;
+  }
+
+  .chat-mensaje.usuario .chat-burbuja,
+  .chat-mensaje.asistente .chat-burbuja {
+    max-width: 100%;
+  }
+
+  .chat-burbuja {
+    padding: 14px 16px;
+  }
+
+  .chat-mensaje.asistente .contenedor-recomendaciones {
+    grid-template-columns: 1fr;
+  }
+
+}
+/* ==========================================
+   PERFUMEIA - DISEÑO DEFINITIVO DEL CHAT
+========================================== */
+
+/* Separación entre chat y formulario */
+.chat-conversacion {
+  margin-bottom: 16px;
+}
+
+/* Área donde aparecen los mensajes */
+.chat-mensajes {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 12px 8px 18px 0;
+}
+
+/* Mensajes del usuario */
+.chat-mensaje.usuario {
+  justify-content: flex-end;
+}
+
+/* Mensajes de PerfumeIA */
+.chat-mensaje.asistente {
+  justify-content: flex-start;
+}
+
+/* Burbujas normales */
+.chat-mensaje.asistente .chat-burbuja {
+  display: block;
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 85%;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  padding: 16px 20px;
+}
+
+/* Texto de las respuestas normales */
+.chat-mensaje.asistente .sin-recomendaciones {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  text-align: left;
+  line-height: 1.7;
+}
+
+/* Evitar márgenes innecesarios */
+.chat-mensaje .chat-burbuja p {
+  margin: 0;
+}
+
+/* Las recomendaciones TOP 1-4 utilizan todo el espacio */
+.chat-mensaje.asistente:has(.contenedor-recomendaciones) .chat-burbuja {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Formulario debajo del chat */
+.chat-conversacion + .consulta-card {
+  margin-top: 0;
+}
+
+.chat-conversacion + .consulta-card textarea {
+  min-height: 85px;
+}
+
+/* Diseño responsive */
+@media (max-width: 768px) {
+  .chat-mensaje.asistente .chat-burbuja {
+    max-width: 100%;
+  }
+
+  .chat-mensajes {
+    max-height: 500px;
+  }
+}
+/* ==========================================
+   PERFUMEIA - CHAT Y FORMULARIO INTEGRADOS
+========================================== */
+
+.chat-conversacion {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Formulario integrado en el chat */
+.chat-conversacion > .consulta-card {
+  margin-top: 0;
+  padding: 20px 0 0;
+  border: none;
+  border-top: 1px solid #efedf4;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Área de mensajes */
+.chat-conversacion .chat-mensajes {
+  max-height: 550px;
+  overflow-y: auto;
+  min-height: 100px;
+}
+
+/* Campo para escribir */
+.chat-conversacion .consulta-card textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Mantener una separación agradable */
+.chat-conversacion .card-title {
+  margin-bottom: 15px;
+}
+/* ==========================================
+   PERFUMEIA - AJUSTE DE MENSAJES
+========================================== */
+
+/* Burbujas del asistente */
+.chat-mensaje.asistente .chat-burbuja {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  width: fit-content;
+  max-width: 85%;
+  min-height: 0;
+  height: auto;
+
+  padding: 16px 18px;
+  gap: 8px;
+
+  /* Evita conservar espacios vacíos innecesarios */
+  white-space: normal;
+}
+
+/* Contenido de las respuestas */
+.chat-mensaje.asistente .chat-burbuja > div {
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* Respuestas normales */
+.chat-mensaje.asistente .sin-recomendaciones {
+  display: block;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  height: auto;
+
+  white-space: pre-line;
+  text-align: left;
+  line-height: 1.7;
+}
+
+/* Nombre del asistente */
+.chat-mensaje.asistente .chat-autor {
+  margin: 0;
+  padding: 0;
+}
+
+/* Recomendaciones TOP 1-4 */
+.chat-mensaje.asistente:has(.contenedor-recomendaciones) .chat-burbuja {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Adaptación a celulares */
+@media (max-width: 768px) {
+  .chat-mensaje.asistente .chat-burbuja {
+    max-width: 100%;
+  }
+}
+/* ==========================================
+   PERFUMEIA - TIPOGRAFÍA DEL CHAT
+========================================== */
+
+/* Texto general de los mensajes */
+.chat-mensaje .chat-burbuja {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* Respuestas del asistente */
+.chat-mensaje.asistente .sin-recomendaciones {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* Títulos y palabras destacadas */
+.chat-mensaje.asistente strong {
+  font-weight: 700;
+}
+
+/* Nombre de quien envía el mensaje */
+.chat-mensaje .chat-autor {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Texto dentro de las recomendaciones TOP */
+.chat-mensaje .tarjeta-recomendacion {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* Adaptación para celulares */
+@media (max-width: 768px) {
+  .chat-mensaje .chat-burbuja,
+  .chat-mensaje.asistente .sin-recomendaciones {
+    font-size: 15px;
+  }
+}
+/* ==========================================
+   PERFUMEIA - DISEÑO DE MI PERFIL
+========================================== */
+
+#perfil {
+  width: 100%;
+}
+
+/* Encabezado */
+#perfil .historial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+#perfil .historial-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #211b43;
+  margin: 8px 0;
+}
+
+#perfil .historial-header p {
+  color: #77758c;
+  font-size: 14px;
+}
+
+/* Botón cerrar */
+#btnCerrarPerfil {
+  background: #f0edff;
+  color: #6355d8;
+  border: 1px solid #e1dcff;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnCerrarPerfil:hover {
+  background: #6355d8;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Contenedor de información */
+#perfil .admin-formulario {
+  background: #faf9ff;
+  border: 1px solid #ebe7ff;
+  border-radius: 18px;
+  padding: 32px;
+}
+
+/* Título de información */
+#perfil .admin-formulario h3 {
+  font-size: 19px;
+  color: #282044;
+  margin-bottom: 25px;
+}
+
+/* Tarjetas de datos */
+#perfil .admin-campo {
+  background: #ffffff;
+  border: 1px solid #eeeaff;
+  border-radius: 12px;
+  padding: 17px 20px;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+#perfil .admin-campo:hover {
+  border-color: #b8adff;
+  box-shadow: 0 5px 16px rgba(99, 85, 216, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Etiquetas */
+#perfil .admin-campo label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a84a5;
+  margin-bottom: 9px;
+}
+
+/* Datos del usuario */
+#perfil .admin-campo p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #292342;
+  overflow-wrap: anywhere;
+}
+
+/* Separador */
+#perfil hr {
+  border: none;
+  border-top: 1px solid #e7e2fa;
+  margin: 30px 0;
+}
+
+/* Privacidad */
+#perfil .admin-formulario > p {
+  background: #f0edff;
+  border-left: 4px solid #7161e8;
+  border-radius: 10px;
+  padding: 18px 20px;
+  color: #615b7a;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Adaptación para teléfonos */
+@media (max-width: 600px) {
+  #perfil .historial-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #perfil .historial-header h2 {
+    font-size: 23px;
+  }
+
+  #perfil .admin-formulario {
+    padding: 20px;
+  }
+
+  #perfil .admin-campo {
+    padding: 15px;
+  }
+
+  #btnCerrarPerfil {
+    width: 100%;
+  }
+}

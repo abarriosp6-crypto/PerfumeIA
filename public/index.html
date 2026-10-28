@@ -45,6 +45,9 @@
       <button class="nav-item oculto" id="btnHistorial">
         ◷ Historial
       </button>
+      <button class="nav-item oculto" id="btnPerfil">
+  ♙ Mi perfil
+      </button>
 
       <button class="nav-item oculto" id="btnAdministracion">
         ⚙ Administración
@@ -96,8 +99,36 @@
       </div>
 
     </header>
+<!-- =====================================
+     CHAT CONVERSACIONAL - PERFUMEIA
+====================================== -->
+<section id="chatConversacion" class="chat-conversacion">
 
-    <!-- =====================================
+  <div class="chat-encabezado">
+
+    <div>
+      <span class="etiqueta">ASISTENTE INTELIGENTE</span>
+      <h2>Tu conversación con PerfumeIA</h2>
+      <p>
+        Tus preguntas y recomendaciones aparecerán aquí.
+      </p>
+    </div>
+
+    <span class="chat-estado">
+      ● Conversación activa
+    </span>
+
+  </div>
+
+  <!-- Aquí se mostrarán los mensajes -->
+  <div
+    id="listaMensajesChat"
+    class="chat-mensajes"
+    role="log"
+    aria-label="Mensajes de la conversación"
+  ></div>
+</section>
+<!-- =====================================
          CONSULTA DE INTELIGENCIA ARTIFICIAL
     ====================================== -->
 
@@ -108,12 +139,12 @@
         <div class="icono">✦</div>
 
         <div>
-          <h2>¿Qué tipo de perfume buscas?</h2>
+          <h2>Conversa con PerfumeIA</h2>
 
           <p>
-            Describe tus gustos, ocasión, clima o el estilo
-            de fragancia que prefieres.
-          </p>
+  Cuéntame qué perfume buscas o pregúntame sobre
+  las recomendaciones anteriores.
+</p>
         </div>
 
       </div>
@@ -129,8 +160,8 @@
         <span id="contador">0 / 500</span>
 
         <button id="btnRecomendar" type="button">
-          ✦ Obtener recomendación
-        </button>
+  ✦ Enviar mensaje
+</button>
 
       </div>
 
@@ -156,7 +187,7 @@
 
       </div>
 
-    </section>
+     </section>
 
     <!-- =====================================
          INDICADOR DE CARGA
@@ -263,10 +294,64 @@
       </div>
 
     </section>
+<!-- =====================================
+     PERFUMEIA - PERFIL DEL USUARIO
+====================================== -->
 
-    <!-- =====================================
-         INICIO DE SESIÓN
-    ====================================== -->
+<section id="perfil" class="catalogo oculto">
+
+  <div class="historial-header">
+
+    <div>
+      <span class="etiqueta">MI CUENTA</span>
+      <h2>Mi perfil</h2>
+      <p>Consulta la información de tu cuenta en PerfumeIA.</p>
+    </div>
+
+    <button id="btnCerrarPerfil" type="button">
+      Cerrar
+    </button>
+
+  </div>
+
+  <div class="admin-formulario">
+
+    <h3>Información personal</h3>
+
+    <div class="admin-campo">
+      <label>Nombre completo</label>
+      <p id="perfilNombre">Cargando...</p>
+    </div>
+
+    <div class="admin-campo">
+      <label>Correo electrónico</label>
+      <p id="perfilCorreo">Cargando...</p>
+    </div>
+
+    <div class="admin-campo">
+      <label>Tipo de cuenta</label>
+      <p id="perfilRol">Cargando...</p>
+    </div>
+
+    <div class="admin-campo">
+      <label>Miembro desde</label>
+      <p id="perfilFecha">Cargando...</p>
+    </div>
+
+    <hr>
+
+    <h3>🔒 Privacidad y seguridad</h3>
+
+    <p>
+      Tu información personal solo está disponible
+      cuando inicias sesión en tu cuenta.
+      Por seguridad, tu contraseña nunca se muestra
+      en esta sección.
+    </p>
+
+  </div>
+
+</section>
 
 <!-- INICIO DE SESIÓN Y REGISTRO -->
 

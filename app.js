@@ -164,6 +164,95 @@ const db = new sqlite3.Database(
 );
 
 db.serialize(() => {
+  // ==========================================
+// CONVERSACIONES DEL CHAT - PERFUMEIA
+// ==========================================
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS conversaciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL,
+    titulo TEXT NOT NULL DEFAULT 'Nueva conversación',
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id)
+      REFERENCES usuarios(id)
+      ON DELETE CASCADE
+  )
+`, (error) => {
+  if (error) {
+    console.error("Error al crear conversaciones:", error.message);
+  } else {
+    console.log("Tabla de conversaciones verificada correctamente.");
+  }
+});
+// ==========================================
+// IDENTIFICAR CONVERSACIONES DEL ADMINISTRADOR
+// ==========================================
+
+db.all(
+  "PRAGMA table_info(conversaciones)",
+  [],
+  (error, columnas) => {
+    if (error) {
+      console.error(
+        "Error al verificar conversaciones:",
+        error.message
+      );
+      return;
+    }
+
+    const tienePropietario = columnas.some(
+      columna => columna.name === "propietario_tipo"
+    );
+
+    if (!tienePropietario) {
+      db.run(`
+        ALTER TABLE conversaciones
+        ADD COLUMN propietario_tipo TEXT NOT NULL
+        DEFAULT 'usuario'
+        CHECK (propietario_tipo IN ('usuario', 'administrador'))
+      `, error => {
+        if (error) {
+          console.error(
+            "Error al actualizar conversaciones:",
+            error.message
+          );
+        } else {
+          console.log(
+            "Conversaciones preparadas para usuarios y administrador."
+          );
+        }
+      });
+    } else {
+      console.log(
+        "Propietarios de conversaciones verificados correctamente."
+      );
+    }
+  }
+);
+// ==========================================
+// MENSAJES DEL CHAT - PERFUMEIA
+// ==========================================
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS mensajes_chat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversacion_id INTEGER NOT NULL,
+    rol TEXT NOT NULL CHECK (rol IN ('usuario', 'asistente')),
+    contenido TEXT NOT NULL,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversacion_id)
+      REFERENCES conversaciones(id)
+      ON DELETE CASCADE
+  )
+`, (error) => {
+  if (error) {
+    console.error("Error al crear mensajes del chat:", error.message);
+  } else {
+    console.log("Tabla de mensajes del chat verificada correctamente.");
+  }
+});
   db.run(`
     CREATE TABLE IF NOT EXISTS historial (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -863,7 +952,55 @@ app.post(
 // ==========================================
 // VERIFICAR SESIÓN DEL USUARIO
 // ==========================================
+// ==========================================
+// PERFUMEIA - PERFIL DEL USUARIO
+// ==========================================
 
+app.get("/api/perfil", requiereUsuario, (req, res) => {
+
+  // El administrador utiliza una cuenta independiente
+  if (req.session.administrador === true) {
+    return res.json({
+      perfil: {
+        nombre: "Administrador",
+        correo: null,
+        rol: "administrador",
+        fecha_registro: null
+      }
+    });
+  }
+
+  const usuarioId = req.session.usuarioId;
+
+  db.get(
+    `SELECT id, nombre, correo, rol, fecha_registro
+     FROM usuarios
+     WHERE id = ?`,
+    [usuarioId],
+    (error, usuario) => {
+
+      if (error) {
+        console.error("Error al consultar perfil:", error.message);
+
+        return res.status(500).json({
+          error: "No se pudo cargar el perfil."
+        });
+      }
+
+      if (!usuario) {
+        return res.status(404).json({
+          error: "Usuario no encontrado."
+        });
+      }
+
+      res.json({
+        perfil: usuario
+      });
+
+    }
+  );
+
+});
 app.get("/api/usuarios/sesion", (req, res) => {
 
   // Verificar si hay un administrador autenticado
@@ -1318,185 +1455,522 @@ const limitarConsultas = rateLimit({
     error: "Demasiadas consultas. Intenta más tarde."
   }
 });
+// ==========================================
+// FUNCIONES PARA EL CHAT CONVERSACIONAL
+// ==========================================
+
+function consultarSQL(sql, parametros = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, parametros, (error, fila) => {
+      if (error) return reject(error);
+      resolve(fila);
+    });
+  });
+}
+
+function consultarTodosSQL(sql, parametros = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, parametros, (error, filas) => {
+      if (error) return reject(error);
+      resolve(filas);
+    });
+  });
+}
+
+function ejecutarSQL(sql, parametros = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, parametros, function (error) {
+      if (error) return reject(error);
+
+      resolve({
+        id: this.lastID,
+        cambios: this.changes
+      });
+    });
+  });
+}
+// ==========================================
+// PERFUMEIA - CHAT CONVERSACIONAL CON MEMORIA
+// ==========================================
 
 app.post(
   "/api/recomendar",
   requiereUsuario,
   limitarConsultas,
   async (req, res) => {
-  const { consulta } = req.body || {};
 
-  if (
-    typeof consulta !== "string" ||
-    consulta.trim().length < 10 ||
-    consulta.length > 500
-  ) {
-    return res.status(400).json({
-      error: "La consulta debe tener entre 10 y 500 caracteres."
-    });
-  }
+    const { consulta, conversacionId } = req.body || {};
 
-  try {
-    const respuestaIA = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages: [
-        {
-          role: "system",
-content: `
+    // Validar la consulta
+    if (
+      typeof consulta !== "string" ||
+      consulta.trim().length < 10 ||
+      consulta.length > 500
+    ) {
+      return res.status(400).json({
+        error: "La consulta debe tener entre 10 y 500 caracteres."
+      });
+    }
+
+    // Identificar al propietario
+    const esAdmin = req.session.administrador === true;
+
+    const usuarioId = esAdmin
+      ? null
+      : req.session.usuarioId;
+
+    const propietarioTipo = esAdmin
+      ? "administrador"
+      : "usuario";
+
+    try {
+
+      let idConversacion;
+
+      // ======================================
+      // BUSCAR O CREAR CONVERSACIÓN
+      // ======================================
+
+      if (conversacionId !== undefined && conversacionId !== null) {
+
+        if (
+          !Number.isSafeInteger(conversacionId) ||
+          conversacionId <= 0
+        ) {
+          return res.status(400).json({
+            error: "Identificador de conversación inválido."
+          });
+        }
+
+        // Comprobar que la conversación pertenece
+        // al usuario autenticado
+        const conversacion = await consultarSQL(
+          `
+          SELECT id
+          FROM conversaciones
+          WHERE id = ?
+          AND propietario_tipo = ?
+          AND (
+            (usuario_id = ?)
+            OR
+            (propietario_tipo = 'administrador' AND usuario_id IS NULL)
+          )
+          `,
+          [conversacionId, propietarioTipo, usuarioId]
+        );
+
+        if (!conversacion) {
+          return res.status(404).json({
+            error: "La conversación no existe o no tienes acceso."
+          });
+        }
+
+        idConversacion = conversacion.id;
+
+      } else {
+
+        // Crear una conversación nueva
+        const titulo = consulta.trim().slice(0, 60);
+
+        const resultado = await ejecutarSQL(
+          `
+          INSERT INTO conversaciones (
+            usuario_id,
+            propietario_tipo,
+            titulo
+          )
+          VALUES (?, ?, ?)
+          `,
+          [usuarioId, propietarioTipo, titulo]
+        );
+
+        idConversacion = resultado.id;
+      }
+
+      // ======================================
+      // RECUPERAR MENSAJES ANTERIORES
+      // ======================================
+
+      const mensajesAnteriores = await consultarTodosSQL(
+        `
+        SELECT rol, contenido
+        FROM (
+          SELECT id, rol, contenido
+          FROM mensajes_chat
+          WHERE conversacion_id = ?
+          ORDER BY id DESC
+          LIMIT 12
+        )
+        ORDER BY id ASC
+        `,
+        [idConversacion]
+      );
+
+      // ======================================
+      // INSTRUCCIONES PARA PERFUMEIA
+      // ======================================
+
+      const instrucciones = `
 Eres PerfumeIA, un asistente inteligente especializado
 en perfumes y recomendaciones personalizadas.
 
 OBJETIVO PRINCIPAL:
 
-Recomendar los perfumes que mejor se adapten
-a las necesidades y preferencias del usuario.
+Ayudar al usuario a encontrar perfumes que se adapten
+a sus gustos, necesidades y preferencias.
 
-REGLA FUNDAMENTAL:
+MEMORIA CONVERSACIONAL:
 
-Las preferencias expresadas por el cliente tienen
-prioridad sobre cualquier criterio general.
+- Utiliza los mensajes anteriores para comprender
+  el contexto de la conversación.
+- Si el usuario pregunta por perfumes recomendados
+  anteriormente, utiliza esa información.
+- No pidas nuevamente información que el usuario
+  ya proporcionó.
+- Si el usuario cambia sus preferencias, considera
+  las nuevas indicaciones.
+- Responde de manera natural a las preguntas
+  de seguimiento.
 
 ANÁLISIS DE PREFERENCIAS:
 
-Antes de recomendar, identifica:
-
-1. Tipo de aroma solicitado.
+Considera:
+1. Tipo de aroma.
 2. Duración deseada.
-3. Ocasión de uso.
+3. Ocasión.
 4. Clima.
-5. Intensidad y proyección.
+5. Intensidad.
 6. Género o preferencia de fragancia.
+PREGUNTAS INTELIGENTES:
 
+Antes de recomendar, analiza la información
+proporcionada por el usuario y los mensajes anteriores.
+
+- Si tienes suficiente información para ofrecer
+  recomendaciones útiles, recomienda directamente.
+
+- Si falta información importante que podría cambiar
+  considerablemente las recomendaciones, realiza
+  una o dos preguntas breves y relevantes.
+
+- No hagas preguntas innecesarias.
+
+- No preguntes nuevamente por preferencias que
+  el usuario ya mencionó.
+
+- No es obligatorio conocer todas las preferencias
+  para recomendar perfumes.
+
+- Si el usuario solicita recomendaciones inmediatas,
+  responde con la información disponible.
+
+- Cuando necesites hacer preguntas, espera la
+  respuesta del usuario antes de recomendar.
+
+- Cuando el usuario responda tus preguntas,
+  utiliza sus respuestas junto con el contexto
+  anterior para generar recomendaciones.
+
+- No conviertas todas las consultas en cuestionarios.
+
+- Si el usuario solamente pide información sobre
+  un perfume, responde directamente sin iniciar
+  un proceso de recomendaciones.
 PRIORIZACIÓN:
 
-- Identifica las características que el usuario
-  considera más importantes.
+Las preferencias del usuario tienen prioridad.
 
-- Si el usuario utiliza expresiones como
-  "principalmente", "lo más importante",
-  "sobre todo", "priorizo" o "indispensable",
-  da mayor importancia a esa característica.
+No priorices automáticamente la duración si el
+usuario no la solicita.
 
-- Si solicita máxima duración, prioriza perfumes
-  conocidos por su buena permanencia en la piel.
+RECOMENDACIONES:
 
-- Si solicita frescura, prioriza fragancias frescas.
+Cuando el usuario solicite recomendaciones:
 
-- Si solicita aromas dulces, prioriza perfumes
-  con perfiles dulces.
+- Recomienda un máximo de cuatro perfumes reales.
+- Ordena las opciones según su compatibilidad.
+- No inventes perfumes para completar cuatro.
+- No repitas perfumes.
 
-- Si solicita elegancia, considera fragancias
-  adecuadas para ocasiones formales.
+Utiliza este formato:
 
-- Si solicita varias características, busca
-  el mejor equilibrio entre ellas.
-
-- No priorices automáticamente la duración
-  cuando el usuario no la solicite.
-
-ORDEN DEL TOP:
-
-TOP 1:
-El perfume que mejor cumple las preferencias
-y prioridades expresadas por el usuario.
-
-TOP 2:
-La segunda opción más compatible.
-
-TOP 3:
-La tercera opción más compatible.
-
-TOP 4:
-La cuarta opción más compatible.
-
-CANTIDAD DE RECOMENDACIONES:
-
-- Recomienda un máximo de 4 perfumes.
-- Si existen 4 opciones adecuadas, recomienda 4.
-- Si solamente existen 3, recomienda 3.
-- Si solamente existen 2, recomienda 2.
-- Si existe una sola opción, recomienda 1.
-- No inventes perfumes para completar el TOP 4.
-
-FORMATO OBLIGATORIO:
-
-PERFUME 1: Nombre del perfume y marca
+PERFUME 1: Nombre y marca
 TIPO: Familia olfativa y características
 OCASIÓN: Situaciones recomendadas
 DURACIÓN: Duración aproximada, si se conoce
-MOTIVO: Explica por qué cumple las prioridades del usuario
+MOTIVO: Razón de la recomendación
 
-Repite el mismo formato para PERFUME 2,
-PERFUME 3 y PERFUME 4 cuando corresponda.
+Repite el formato cuando corresponda.
 
-REGLAS ADICIONALES:
+PREGUNTAS DE SEGUIMIENTO:
+
+Cuando el usuario haga preguntas sobre perfumes
+mencionados anteriormente, responde directamente.
+
+Por ejemplo:
+
+Usuario: ¿Cuál de esos cuatro dura más?
+
+Debes comparar los perfumes mencionados
+anteriormente y responder la pregunta.
+
+No generes un nuevo TOP de perfumes cuando
+el usuario solamente solicite una aclaración.
+
+REGLAS:
 
 - Responde siempre en español.
-- Utiliza nombres de perfumes reales.
 - No inventes características.
 - No inventes disponibilidad.
 - No incluyas precios.
-- No utilices Markdown.
-- No utilices asteriscos.
-- No utilices listas con guiones.
-- No repitas perfumes.
+- No utilices Markdown ni asteriscos.
 - No asegures duraciones exactas.
-- Ordena siempre por compatibilidad con el cliente.
-- Si una recomendación cumple menos requisitos
-  que otra, no debe ocupar una posición superior
-  sin una razón clara.
-- Explica brevemente en MOTIVO qué preferencias
-  del usuario cumple cada perfume.
-- No agregues introducciones ni despedidas.
-`
+- Mantén respuestas claras y útiles.
+- Cuando presentes recomendaciones, utiliza
+  el formato PERFUME, TIPO, OCASIÓN,
+  DURACIÓN y MOTIVO.
+`;
+
+      // ======================================
+      // PREPARAR CONTEXTO PARA GROQ
+      // ======================================
+
+      const mensajesGroq = [
+        {
+          role: "system",
+          content: instrucciones
         },
+        ...mensajesAnteriores.map(mensaje => ({
+          role: mensaje.rol === "usuario"
+            ? "user"
+            : "assistant",
+          content: mensaje.contenido
+        })),
         {
           role: "user",
           content: consulta.trim()
         }
-      ]
-    });
+      ];
 
-    const recomendacion =
-      respuestaIA.choices[0]?.message?.content;
+      // ======================================
+      // CONSULTAR A LA INTELIGENCIA ARTIFICIAL
+      // ======================================
 
-    if (!recomendacion) {
-      throw new Error("La IA devolvió una respuesta vacía.");
-    }
+      const respuestaIA = await groq.chat.completions.create({
+        model: "openai/gpt-oss-20b",
+        messages: mensajesGroq
+      });
 
-// Identificar al usuario que realizó la consulta.
-// Las consultas del administrador quedan sin usuario asignado.
-const usuarioId = req.session?.administrador === true
-  ? null
-  : req.session.usuarioId;
+      const recomendacion =
+        respuestaIA.choices[0]?.message?.content;
 
-db.run(`
-  INSERT INTO historial (consulta, respuesta, usuario_id)
-  VALUES (?, ?, ?)
-`, [consulta.trim(), recomendacion, usuarioId], function(error) {
-      if (error) {
-        return res.status(500).json({
-          error: "No fue posible guardar la recomendación."
-        });
+      if (!recomendacion) {
+        throw new Error("La IA devolvió una respuesta vacía.");
       }
 
+      // ======================================
+      // GUARDAR MENSAJES DE LA CONVERSACIÓN
+      // ======================================
+
+      await ejecutarSQL(
+        `
+        INSERT INTO mensajes_chat (
+          conversacion_id,
+          rol,
+          contenido
+        )
+        VALUES (?, 'usuario', ?)
+        `,
+        [idConversacion, consulta.trim()]
+      );
+
+      await ejecutarSQL(
+        `
+        INSERT INTO mensajes_chat (
+          conversacion_id,
+          rol,
+          contenido
+        )
+        VALUES (?, 'asistente', ?)
+        `,
+        [idConversacion, recomendacion]
+      );
+
+      // Actualizar fecha de la conversación
+      await ejecutarSQL(
+        `
+        UPDATE conversaciones
+        SET fecha_actualizacion = CURRENT_TIMESTAMP
+        WHERE id = ?
+        `,
+        [idConversacion]
+      );
+
+      // ======================================
+      // CONSERVAR EL HISTORIAL ANTERIOR
+      // ======================================
+
+      const historial = await ejecutarSQL(
+        `
+        INSERT INTO historial (
+          consulta,
+          respuesta,
+          usuario_id
+        )
+        VALUES (?, ?, ?)
+        `,
+        [consulta.trim(), recomendacion, usuarioId]
+      );
+
+      // ======================================
+      // ENVIAR RESPUESTA AL FRONTEND
+      // ======================================
+
       res.json({
-        mensaje: "Recomendación generada correctamente.",
-        id: this.lastID,
+        mensaje: "Respuesta generada correctamente.",
+        id: historial.id,
         consulta: consulta.trim(),
-        recomendacion
+        recomendacion,
+        conversacionId: idConversacion
       });
+
+    } catch (error) {
+
+      console.error(
+        "Error en el chat de PerfumeIA:",
+        error.message
+      );
+
+      res.status(500).json({
+        error: "No fue posible procesar la conversación."
+      });
+    }
+  }
+);
+
+// ==========================================
+// PERFUMEIA - HISTORIAL DE CONVERSACIONES
+// ==========================================
+
+// ==========================================
+// LISTAR CONVERSACIONES DEL USUARIO
+// ==========================================
+
+app.get("/api/conversaciones", requiereUsuario, async (req, res) => {
+  try {
+    const esAdmin = req.session?.administrador === true;
+
+    const usuarioId = esAdmin
+      ? null
+      : req.session?.usuarioId;
+
+    const propietarioTipo = esAdmin
+      ? "administrador"
+      : "usuario";
+
+    let conversaciones;
+
+    if (esAdmin) {
+      conversaciones = await consultarTodosSQL(
+        `SELECT id, titulo, fecha_creacion, fecha_actualizacion
+         FROM conversaciones
+         WHERE propietario_tipo = ?
+           AND usuario_id IS NULL
+         ORDER BY fecha_actualizacion DESC, id DESC`,
+        [propietarioTipo]
+      );
+    } else {
+      conversaciones = await consultarTodosSQL(
+        `SELECT id, titulo, fecha_creacion, fecha_actualizacion
+         FROM conversaciones
+         WHERE propietario_tipo = ?
+           AND usuario_id = ?
+         ORDER BY fecha_actualizacion DESC, id DESC`,
+        [propietarioTipo, usuarioId]
+      );
+    }
+
+    res.json({
+      conversaciones
     });
 
   } catch (error) {
-    console.error("Error de IA:", error.message);
+    console.error("Error al obtener conversaciones:", error);
 
     res.status(500).json({
-      error: "No fue posible obtener la recomendación."
+      error: "No se pudieron obtener las conversaciones."
     });
   }
 });
+// ==========================================
+// PERFUMEIA - MENSAJES DE UNA CONVERSACIÓN
+// ==========================================
 
+app.get("/api/conversaciones/:id/mensajes", requiereUsuario, async (req, res) => {
+  try {
+    const idConversacion = Number(req.params.id);
+
+    if (!Number.isSafeInteger(idConversacion) || idConversacion <= 0) {
+      return res.status(400).json({
+        error: "Identificador de conversación inválido."
+      });
+    }
+
+    const esAdmin = req.session?.administrador === true;
+
+    const usuarioId = esAdmin
+      ? null
+      : req.session?.usuarioId;
+
+    const propietarioTipo = esAdmin
+      ? "administrador"
+      : "usuario";
+
+    // Comprobar que la conversación pertenece a la sesión actual
+    const conversacion = await consultarSQL(
+      `
+      SELECT id, titulo
+      FROM conversaciones
+      WHERE id = ?
+        AND propietario_tipo = ?
+        AND (
+          usuario_id = ?
+          OR (propietario_tipo = 'administrador' AND usuario_id IS NULL)
+        )
+      `,
+      [idConversacion, propietarioTipo, usuarioId]
+    );
+
+    if (!conversacion) {
+      return res.status(404).json({
+        error: "La conversación no existe o no tienes acceso."
+      });
+    }
+
+    // Recuperar los mensajes en orden cronológico
+    const mensajes = await consultarTodosSQL(
+      `
+      SELECT id, rol, contenido
+      FROM mensajes_chat
+      WHERE conversacion_id = ?
+      ORDER BY id ASC
+      `,
+      [idConversacion]
+    );
+
+    return res.json({
+      conversacion,
+      mensajes
+    });
+
+  } catch (error) {
+    console.error("Error al recuperar mensajes:", error);
+
+    return res.status(500).json({
+      error: "No se pudieron recuperar los mensajes."
+    });
+  }
+});
 // ==========================================
 // HISTORIAL PRIVADO
 // ==========================================

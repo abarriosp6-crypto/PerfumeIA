@@ -25,6 +25,18 @@ const btnHistorial = document.getElementById("btnHistorial");
 const historial = document.getElementById("historial");
 const listaHistorial = document.getElementById("listaHistorial");
 const btnCerrarHistorial = document.getElementById("btnCerrarHistorial");
+// ==========================================
+// PERFUMEIA - ELEMENTOS DEL PERFIL
+// ==========================================
+
+const btnPerfil = document.getElementById("btnPerfil");
+const perfil = document.getElementById("perfil");
+const btnCerrarPerfil = document.getElementById("btnCerrarPerfil");
+
+const perfilNombre = document.getElementById("perfilNombre");
+const perfilCorreo = document.getElementById("perfilCorreo");
+const perfilRol = document.getElementById("perfilRol");
+const perfilFecha = document.getElementById("perfilFecha");
 
 const btnAdministracion = document.getElementById("btnAdministracion");
 const administracion = document.getElementById("administracion");
@@ -84,28 +96,38 @@ let perfumes = [];
 let esAdministrador = false;
 let usuarioActual = null;
 
-
+// Identificador de la conversación actual
+let conversacionIdActual = null;
 /* ==========================================
    FUNCIONES GENERALES
 ========================================== */
-
 function escapeHTML(texto) {
-  const div = document.createElement("div");
-  div.textContent = String(texto ?? "");
-  return div.innerHTML;
+  return String(texto ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
-
 function ocultarSecciones() {
-  [
-    resultado,
-    historial,
-    catalogo,
-    administracion,
-    loginAdmin,
-    cargando
-  ].forEach(seccion => {
-    seccion.classList.add("oculto");
+[
+  resultado,
+  historial,
+  catalogo,
+  perfil,
+  administracion,
+  loginAdmin,
+  cargando
+].forEach(seccion => {
+    if (seccion) {
+      seccion.classList.add("oculto");
+    }
   });
+
+  // Ocultar la conversación al cambiar de sección
+  if (chatConversacion) {
+    chatConversacion.classList.add("oculto");
+  }
 }
 
 function activarMenu(boton) {
@@ -158,6 +180,8 @@ function actualizarMenuAdmin() {
 
   // El historial estará disponible para usuarios y administradores
   btnHistorial.classList.toggle("oculto", !sesionActiva);
+  // Mostrar Mi perfil únicamente con una sesión activa
+btnPerfil.classList.toggle("oculto", !sesionActiva);
 
   // Administración continúa siendo exclusiva del administrador
   btnAdministracion.classList.toggle("oculto", !esAdministrador);
@@ -285,7 +309,11 @@ btnIngresarAdmin.addEventListener("click", async () => {
     await leerJSON(respuesta);
 
     esAdministrador = true;
-    actualizarMenuAdmin();
+    // Reiniciar el chat al iniciar sesión
+conversacionIdActual = null;
+limpiarMensajesChat();
+
+actualizarMenuAdmin();
 
     passwordAdmin.value = "";
     mensajeLoginAdmin.textContent = "";
@@ -335,8 +363,12 @@ formLoginUsuario.addEventListener("submit", async evento => {
     usuarioActual = datos.usuario;
     esAdministrador = false;
 
-    // Actualizar la interfaz
-    actualizarMenuAdmin();
+    // Reiniciar el chat al iniciar sesión
+conversacionIdActual = null;
+limpiarMensajesChat();
+
+// Actualizar la interfaz
+actualizarMenuAdmin();
     passwordLogin.value = "";
     loginAdmin.classList.add("oculto");
 
@@ -1005,10 +1037,38 @@ btnCerrarAdministracion.addEventListener(
 
 btnInicio.addEventListener("click", volverInicio);
 
+// ==========================================
+// INICIAR UNA NUEVA CONVERSACIÓN
+// ==========================================
+
 btnNuevaConsulta.addEventListener("click", () => {
-  volverInicio();
-  activarMenu(btnNuevaConsulta);
+
+  // Reiniciar el identificador de la conversación
+  conversacionIdActual = null;
+  limpiarMensajesChat();
+
+  // Limpiar la consulta anterior
+  consulta.value = "";
+  contador.textContent = "0 / 500";
+
+  // Limpiar las recomendaciones anteriores
+  respuestaIA.innerHTML = "";
+
+  // Volver a la pantalla principal
+// Volver a la pantalla principal
+volverInicio();
+activarMenu(btnNuevaConsulta);
+
+// Mostrar nuevamente el formulario de consulta
+const formularioConsulta = document.querySelector(".consulta-card");
+
+if (formularioConsulta) {
+  formularioConsulta.classList.remove("oculto");
+}
+
+  // Preparar el campo para escribir
   consulta.focus();
+
 });
 
 btnCatalogo.addEventListener("click", async () => {
@@ -1203,22 +1263,40 @@ btnRecomendar.addEventListener("click", async () => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        consulta: texto
-      })
+  consulta: texto,
+  conversacionId: conversacionIdActual
+})
     });
 
-    const datos = await leerJSON(respuesta);
+   const datos = await leerJSON(respuesta);
 
-    respuestaIA.innerHTML =
-      formatearRespuesta(datos.recomendacion);
+// Guardar el identificador de la conversación actual
+if (Number.isSafeInteger(datos.conversacionId)) {
+  conversacionIdActual = datos.conversacionId;
+}
+
+// Mostrar la pregunta del usuario dentro del chat
+agregarMensajeChat("usuario", texto);
+
+// Mostrar la respuesta de PerfumeIA dentro del chat
+agregarMensajeChat("asistente", datos.recomendacion);
+
+// Limpiar el campo para escribir el siguiente mensaje
+consulta.value = "";
+contador.textContent = "0 / 500";
+
+// Ocultar el diseño anterior de resultados
+resultado.classList.add("oculto");
 
     cargando.classList.add("oculto");
-    resultado.classList.remove("oculto");
+    chatConversacion.classList.remove("oculto");
 
-    resultado.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+chatMensajes.scrollTop = chatMensajes.scrollHeight;
+
+consulta.scrollIntoView({
+  behavior: "smooth",
+  block: "nearest"
+});
 
   } catch (error) {
     cargando.classList.add("oculto");
@@ -1228,14 +1306,80 @@ btnRecomendar.addEventListener("click", async () => {
     btnRecomendar.disabled = false;
   }
 });
+// ==========================================
+// PERFUMEIA - MI PERFIL
+// ==========================================
 
-/* ==========================================
-   HISTORIAL DE RECOMENDACIONES
-========================================== */
+btnPerfil.addEventListener("click", async () => {
+
+  if (!esAdministrador && !usuarioActual) {
+    alert("Debes iniciar sesión para consultar tu perfil.");
+    return;
+  }
+
+  mostrarSeccion(perfil, btnPerfil);
+
+  perfilNombre.textContent = "Cargando...";
+  perfilCorreo.textContent = "Cargando...";
+  perfilRol.textContent = "Cargando...";
+  perfilFecha.textContent = "Cargando...";
+
+  try {
+
+    const respuesta = await fetch("/api/perfil", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    const datos = await leerJSON(respuesta);
+    const usuario = datos.perfil;
+
+    if (!usuario) {
+      throw new Error("No se encontraron los datos del perfil.");
+    }
+
+    perfilNombre.textContent = usuario.nombre || "No disponible";
+
+    perfilCorreo.textContent = usuario.correo || "No disponible";
+
+    perfilRol.textContent =
+      usuario.rol === "administrador"
+        ? "Administrador"
+        : "Usuario";
+
+    if (usuario.fecha_registro) {
+
+      const fecha = new Date(usuario.fecha_registro);
+
+      perfilFecha.textContent = Number.isNaN(fecha.getTime())
+        ? String(usuario.fecha_registro)
+        : fecha.toLocaleDateString("es-GT");
+
+    } else {
+      perfilFecha.textContent = "No disponible";
+    }
+
+  } catch (error) {
+
+    console.error("Error al cargar perfil:", error);
+
+    perfilNombre.textContent = "No se pudo cargar el perfil.";
+    perfilCorreo.textContent = "—";
+    perfilRol.textContent = "—";
+    perfilFecha.textContent = "—";
+
+  }
+
+});
+
+// Cerrar el apartado Mi perfil
+btnCerrarPerfil.addEventListener("click", volverInicio);
+// ==========================================
+// HISTORIAL DE CONVERSACIONES
+// ==========================================
 
 btnHistorial.addEventListener("click", async () => {
 
-  // Verificar que exista una sesión activa
   if (!esAdministrador && !usuarioActual) {
     alert("Debes iniciar sesión para consultar tu historial.");
     return;
@@ -1243,10 +1387,14 @@ btnHistorial.addEventListener("click", async () => {
 
   mostrarSeccion(historial, btnHistorial);
 
-  listaHistorial.innerHTML = "<p>Cargando historial...</p>";
+  if (chatConversacion) {
+    chatConversacion.classList.add("oculto");
+  }
+
+  listaHistorial.innerHTML = "<p>Cargando conversaciones...</p>";
 
   try {
-    const respuesta = await fetch("/api/historial", {
+    const respuesta = await fetch("/api/conversaciones", {
       credentials: "same-origin",
       cache: "no-store"
     });
@@ -1254,6 +1402,13 @@ btnHistorial.addEventListener("click", async () => {
     if (respuesta.status === 401) {
       esAdministrador = false;
       usuarioActual = null;
+      conversacionIdActual = null;
+
+      limpiarMensajesChat();
+
+      respuestaIA.innerHTML = "";
+      consulta.value = "";
+      contador.textContent = "0 / 500";
 
       actualizarMenuAdmin();
       volverInicio();
@@ -1262,111 +1417,124 @@ btnHistorial.addEventListener("click", async () => {
       return;
     }
 
+    if (!respuesta.ok) {
+      throw new Error("No se pudieron cargar las conversaciones.");
+    }
+
     const datos = await leerJSON(respuesta);
+    const conversaciones = datos.conversaciones;
 
-    // Obtener las recomendaciones del servidor
-    const registros = datos.historial;
-
-    if (!Array.isArray(registros)) {
+    if (!Array.isArray(conversaciones)) {
       throw new Error("El historial tiene un formato incorrecto.");
     }
 
     listaHistorial.innerHTML = "";
 
-    if (registros.length === 0) {
+    if (conversaciones.length === 0) {
       listaHistorial.innerHTML =
-        "<p>Todavía no tienes recomendaciones guardadas.</p>";
+        "<p>Todavía no tienes conversaciones guardadas.</p>";
       return;
     }
 
-registros.forEach(registro => {
+    conversaciones.forEach(conversacion => {
 
-  const elemento = document.createElement("div");
-  elemento.className = "historial-item";
+      const elemento = document.createElement("div");
+      elemento.className = "historial-item";
 
-  const fecha = new Date(registro.fecha);
+      const fecha = new Date(
+        conversacion.fecha_actualizacion ||
+        conversacion.fecha_creacion
+      );
 
-  const fechaTexto = Number.isNaN(fecha.getTime())
-    ? String(registro.fecha ?? "")
-    : fecha.toLocaleString("es-GT");
+      const fechaTexto = Number.isNaN(fecha.getTime())
+        ? "Fecha no disponible"
+        : fecha.toLocaleString("es-GT");
 
-  const consultaCompleta = String(registro.consulta ?? "");
+      const titulo = String(conversacion.titulo ?? "Conversación");
 
-  const consultaResumida =
-    consultaCompleta.length > 90
-      ? consultaCompleta.substring(0, 90) + "..."
-      : consultaCompleta;
+      elemento.innerHTML = `
+        <div class="historial-resumen">
 
-  elemento.innerHTML = `
-    <div class="historial-resumen">
+          <div class="historial-info">
+            <small>${escapeHTML(fechaTexto)}</small>
+            <h3>${escapeHTML(titulo)}</h3>
+          </div>
 
-      <div class="historial-info">
+          <button type="button" class="btn-ver-detalles">
+            Abrir conversación
+          </button>
 
-        <small>
-          Consulta #${escapeHTML(registro.id)}
-          · ${escapeHTML(fechaTexto)}
-        </small>
+        </div>
+      `;
 
-        <h3>${escapeHTML(consultaResumida)}</h3>
+      const botonAbrir =
+        elemento.querySelector(".btn-ver-detalles");
 
-      </div>
+      botonAbrir.addEventListener("click", async () => {
 
-      <button
-        type="button"
-        class="btn-ver-detalles"
-        aria-expanded="false"
-      >
-        Ver detalles ▼
-      </button>
+        botonAbrir.disabled = true;
+        botonAbrir.textContent = "Abriendo...";
 
-    </div>
+        try {
+          const respuestaMensajes = await fetch(
+            `/api/conversaciones/${conversacion.id}/mensajes`,
+            {
+              credentials: "same-origin",
+              cache: "no-store"
+            }
+          );
 
-    <div class="historial-detalles oculto">
+          if (!respuestaMensajes.ok) {
+            throw new Error("No se pudo abrir la conversación.");
+          }
 
-      <p>
-        <strong>Consulta realizada:</strong>
-        ${escapeHTML(consultaCompleta)}
-      </p>
+          const datosMensajes = await leerJSON(respuestaMensajes);
 
-      <div class="respuesta-historial">
-        ${formatearRespuesta(registro.respuesta)}
-      </div>
+          if (!Array.isArray(datosMensajes.mensajes)) {
+            throw new Error("Los mensajes tienen un formato incorrecto.");
+          }
 
-    </div>
-  `;
+          // Limpiar únicamente el chat visible
+          limpiarMensajesChat();
 
-  const btnDetalles =
-    elemento.querySelector(".btn-ver-detalles");
+          // Recuperar los mensajes guardados
+          datosMensajes.mensajes.forEach(mensaje => {
+            agregarMensajeChat(mensaje.rol, mensaje.contenido);
+          });
 
-  const detalles =
-    elemento.querySelector(".historial-detalles");
+          // Asociar los siguientes mensajes a esta conversación
+          conversacionIdActual = conversacion.id;
 
-  btnDetalles.addEventListener("click", () => {
+          // Regresar a la pantalla de conversación
+          volverInicio();
+          activarMenu(btnNuevaConsulta);
 
-    const abierto = !detalles.classList.contains("oculto");
+          consulta.value = "";
+          contador.textContent = "0 / 500";
 
-    detalles.classList.toggle("oculto", abierto);
+          if (chatConversacion && datosMensajes.mensajes.length > 0) {
+            chatConversacion.classList.remove("oculto");
+          }
 
-    btnDetalles.textContent = abierto
-      ? "Ver detalles ▼"
-      : "Ocultar detalles ▲";
+        } catch (error) {
+          alert(mostrarError(error));
+        } finally {
+          botonAbrir.disabled = false;
+          botonAbrir.textContent = "Abrir conversación";
+        }
 
-    btnDetalles.setAttribute(
-      "aria-expanded",
-      String(!abierto)
-    );
+      });
 
-  });
+      listaHistorial.appendChild(elemento);
 
-  listaHistorial.appendChild(elemento);
-
-});
+    });
 
   } catch (error) {
     listaHistorial.innerHTML = `
       <p>${escapeHTML(mostrarError(error))}</p>
     `;
   }
+
 });
 
 /* ==========================================
@@ -1807,3 +1975,74 @@ function BufferByteLength(texto) {
 // ==========================================
 
 comprobarEnlaceRecuperacion();
+/* ==========================================
+   PERFUMEIA - MENSAJES DEL CHAT
+========================================== */
+
+// Elementos del chat
+const chatConversacion = document.getElementById("chatConversacion");
+const chatMensajes = document.getElementById("listaMensajesChat");
+
+// Mostrar un mensaje dentro del chat
+function agregarMensajeChat(rol, contenido) {
+
+  if (!chatConversacion || !chatMensajes) {
+    console.warn("No se encontraron los elementos del chat.");
+    return;
+  }
+
+  const esUsuario = rol === "usuario";
+
+  const mensaje = document.createElement("div");
+
+  mensaje.className = esUsuario
+    ? "chat-mensaje usuario"
+    : "chat-mensaje asistente";
+
+  const burbuja = document.createElement("div");
+  burbuja.className = "chat-burbuja";
+
+  const autor = document.createElement("span");
+  autor.className = "chat-autor";
+
+  autor.textContent = esUsuario
+    ? "Tú"
+    : "PerfumeIA";
+
+  burbuja.appendChild(autor);
+
+  const cuerpo = document.createElement("div");
+
+ if (esUsuario) {
+  cuerpo.textContent = contenido;
+} else {
+  let respuestaFormateada = formatearRespuesta(contenido);
+
+  // Convertir el formato **texto** en negrita
+  respuestaFormateada = respuestaFormateada.replace(
+    /\*\*([^*]+)\*\*/g,
+    "<strong>$1</strong>"
+  );
+
+  cuerpo.innerHTML = respuestaFormateada;
+}
+
+  burbuja.appendChild(cuerpo);
+  mensaje.appendChild(burbuja);
+
+  chatMensajes.appendChild(mensaje);
+
+  chatConversacion.classList.remove("oculto");
+
+  // Desplazarse automáticamente al último mensaje
+  chatMensajes.scrollTop = chatMensajes.scrollHeight;
+}
+
+// Limpiar los mensajes visibles
+function limpiarMensajesChat() {
+
+  if (chatMensajes) {
+    chatMensajes.innerHTML = "";
+  }
+
+}
