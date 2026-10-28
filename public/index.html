@@ -578,7 +578,54 @@
             </div>
 
           </div>
+<!-- =====================================
+     PRESENTACIONES EN MILILITROS
+====================================== -->
 
+<div class="admin-campo presentaciones-contenedor">
+
+  <label for="nuevaPresentacion">
+    Presentaciones disponibles (ml)
+  </label>
+
+  <p class="presentaciones-ayuda">
+    Agrega los tamaños disponibles para este perfume.
+    Puedes registrar varias presentaciones.
+  </p>
+
+  <div class="presentaciones-agregar">
+
+    <input
+      type="number"
+      id="nuevaPresentacion"
+      min="1"
+      max="1000"
+      step="1"
+      placeholder="Ejemplo: 100"
+    >
+
+    <button
+      type="button"
+      id="btnAgregarPresentacion"
+    >
+      + Agregar presentación
+    </button>
+
+  </div>
+
+  <div
+    id="listaPresentaciones"
+    class="lista-presentaciones"
+  ></div>
+
+  <p
+    id="mensajePresentaciones"
+    class="mensaje-presentaciones"
+    role="status"
+    aria-live="polite"
+  ></p>
+
+</div>
           <!-- DESCRIPCIÓN -->
 
           <div

@@ -448,7 +448,11 @@ perfumes = datos.map(perfume => ({
   }
 }
 
-function mostrarCatalogo(lista = perfumes) {
+/* ==========================================
+   MOSTRAR CATÁLOGO DE PERFUMES
+========================================== */
+
+async function mostrarCatalogo(lista = perfumes) {
   listaCatalogo.innerHTML = "";
 
   if (lista.length === 0) {
@@ -457,9 +461,46 @@ function mostrarCatalogo(lista = perfumes) {
     return;
   }
 
-  lista.forEach(perfume => {
+  const fragmento = document.createDocumentFragment();
+
+  for (const perfume of lista) {
     const tarjeta = document.createElement("div");
     tarjeta.className = "perfume-card";
+
+    let textoPresentaciones = "Sin presentaciones registradas";
+
+    try {
+      const respuesta = await fetch(
+        `/api/perfumes/${encodeURIComponent(perfume.id)}/presentaciones`,
+        {
+          credentials: "same-origin"
+        }
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("Error al consultar las presentaciones");
+      }
+
+      const datos = await respuesta.json();
+
+      const presentaciones = Array.isArray(datos)
+        ? datos
+        : datos.presentaciones || [];
+
+      if (presentaciones.length > 0) {
+        textoPresentaciones = presentaciones
+          .map(p => `${Number(p.mililitros)} ml`)
+          .join(" · ");
+      }
+
+    } catch (error) {
+      console.error(
+        `Error al cargar presentaciones del perfume ${perfume.id}:`,
+        error
+      );
+
+      textoPresentaciones = "No se pudieron cargar";
+    }
 
     tarjeta.innerHTML = `
       <h3>${escapeHTML(perfume.nombre)}</h3>
@@ -473,16 +514,23 @@ function mostrarCatalogo(lista = perfumes) {
       </p>
 
       <span class="perfume-tipo">
-        ${escapeHTML(perfume.tipo)}
+        ${escapeHTML(perfume.tipo || perfume.tipo_aroma || "")}
       </span>
+
+      <p class="perfume-presentaciones">
+        <strong>Presentaciones:</strong>
+        ${escapeHTML(textoPresentaciones)}
+      </p>
 
       <span class="perfume-disponible">
         ${perfume.disponible ? "✓ Disponible" : "No disponible"}
       </span>
     `;
 
-    listaCatalogo.appendChild(tarjeta);
-  });
+    fragmento.appendChild(tarjeta);
+  }
+
+  listaCatalogo.appendChild(fragmento);
 }
 
 function filtrarCatalogo() {
@@ -520,7 +568,11 @@ const tituloFormularioPerfume = document.getElementById("tituloFormularioPerfume
 
 let guardandoPerfume = false;
 
-function mostrarAdminPerfumes() {
+/* ==========================================
+   MOSTRAR PERFUMES EN ADMINISTRACIÓN
+========================================== */
+
+async function mostrarAdminPerfumes() {
   listaAdminPerfumes.innerHTML = "";
 
   if (!esAdministrador) {
@@ -533,9 +585,42 @@ function mostrarAdminPerfumes() {
     return;
   }
 
-  perfumes.forEach(perfume => {
+  for (const perfume of perfumes) {
     const elemento = document.createElement("div");
     elemento.className = "admin-perfume-item";
+
+    let textoPresentaciones = "Sin presentaciones registradas";
+
+    try {
+      const respuesta = await fetch(
+        `/api/perfumes/${encodeURIComponent(perfume.id)}/presentaciones`,
+        { credentials: "same-origin" }
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudieron consultar las presentaciones");
+      }
+
+      const datos = await respuesta.json();
+
+      const presentaciones = Array.isArray(datos)
+        ? datos
+        : datos.presentaciones || [];
+
+      if (presentaciones.length > 0) {
+        textoPresentaciones = presentaciones
+          .map(p => `${Number(p.mililitros)} ml`)
+          .join(" · ");
+      }
+
+    } catch (error) {
+      console.error(
+        `Error al cargar presentaciones del perfume ${perfume.id}:`,
+        error
+      );
+
+      textoPresentaciones = "No se pudieron cargar";
+    }
 
     elemento.innerHTML = `
       <div class="admin-perfume-info">
@@ -548,12 +633,17 @@ function mostrarAdminPerfumes() {
 
         <p>
           <strong>Tipo:</strong>
-          ${escapeHTML(perfume.tipo)}
+          ${escapeHTML(perfume.tipo || perfume.tipo_aroma || "")}
         </p>
 
         <p>
           <strong>Estado:</strong>
           ${perfume.disponible ? "Disponible" : "No disponible"}
+        </p>
+
+        <p>
+          <strong>Presentaciones:</strong>
+          ${escapeHTML(textoPresentaciones)}
         </p>
       </div>
 
@@ -585,7 +675,7 @@ function mostrarAdminPerfumes() {
       });
 
     listaAdminPerfumes.appendChild(elemento);
-  });
+  }
 }
 
 /* ==========================================
@@ -631,6 +721,15 @@ formPerfume.addEventListener("submit", async evento => {
     return;
   }
 
+  // Validar las presentaciones agregadas
+  const presentaciones = [...presentacionesSeleccionadas]
+    .sort((a, b) => a - b);
+
+  if (presentaciones.length === 0) {
+    mensajeAdmin.textContent =
+      "Agrega al menos una presentación en mililitros.";
+    return;
+  }
 
 const datosPerfume = {
   nombre,
@@ -638,9 +737,9 @@ const datosPerfume = {
   tipo_aroma,
   descripcion,
   genero: generoPerfume.value,
-  disponible: Number(disponiblePerfume.value)
+  disponible: Number(disponiblePerfume.value),
+  presentaciones: [...presentacionesSeleccionadas]
 };
-
 
   const id = idPerfume.value;
   const editando = id !== "";
@@ -681,7 +780,22 @@ const datosPerfume = {
 
     const datos = await leerJSON(respuesta);
 
+    // Verificar que el servidor aceptó la operación
+    if (!respuesta.ok) {
+      throw new Error(
+        datos.error ||
+        datos.mensaje ||
+        "No se pudo guardar el perfume."
+      );
+    }
+
     limpiarFormularioPerfume();
+
+    // Limpiar las presentaciones después de guardar
+    presentacionesSeleccionadas = [];
+    mostrarPresentaciones();
+    inputNuevaPresentacion.value = "";
+    mensajePresentaciones.textContent = "";
 
     await cargarCatalogo();
 
@@ -701,12 +815,11 @@ const datosPerfume = {
         : "Guardar perfume";
   }
 });
-
 /* ==========================================
-   EDITAR PERFUME
+   EDITAR PERFUME CON PRESENTACIONES EN ML
 ========================================== */
 
-function editarPerfume(id) {
+async function editarPerfume(id) {
   if (!esAdministrador) {
     return;
   }
@@ -716,38 +829,59 @@ function editarPerfume(id) {
   );
 
   if (!perfume) {
-    mensajeAdmin.textContent =
-      "No se encontró el perfume.";
+    mensajeAdmin.textContent = "No se encontró el perfume.";
     return;
   }
 
+  // Cargar los datos generales del perfume
   idPerfume.value = perfume.id;
   nombrePerfume.value = perfume.nombre;
   marcaPerfume.value = perfume.marca;
-  tipoPerfume.value = perfume.tipo;
+  tipoPerfume.value = perfume.tipo_aroma || perfume.tipo || "";
   descripcionPerfume.value = perfume.descripcion;
 
   disponiblePerfume.value =
     perfume.disponible ? "1" : "0";
 
-disponiblePerfume.value =
-  perfume.disponible ? "1" : "0";
-
-// Recuperar la categoría guardada del perfume.
-generoPerfume.value = perfume.genero || "Unisex";
-
-tituloFormularioPerfume.textContent =
-  "Editar perfume";
-
-btnGuardarPerfume.textContent =
-  "Actualizar perfume";
   generoPerfume.value = perfume.genero || "Unisex";
 
-  tituloFormularioPerfume.textContent =
-    "Editar perfume";
+  // Cargar las presentaciones desde SQLite
+  try {
+    const respuesta = await fetch(
+      `/api/perfumes/${encodeURIComponent(id)}/presentaciones`,
+      { credentials: "same-origin" }
+    );
 
-  btnGuardarPerfume.textContent =
-    "Actualizar perfume";
+    if (!respuesta.ok) {
+      throw new Error("No se pudieron cargar las presentaciones.");
+    }
+
+    const datos = await respuesta.json();
+
+    presentacionesSeleccionadas = datos.presentaciones.map(
+      item => Number(item.mililitros)
+    );
+
+    mostrarPresentaciones();
+
+    inputNuevaPresentacion.value = "";
+    mensajePresentaciones.textContent = "";
+
+  } catch (error) {
+    mensajeAdmin.textContent =
+      "No se pudieron cargar las presentaciones. Intenta nuevamente.";
+
+    // Evitar editar con una lista incompleta
+    idPerfume.value = "";
+    presentacionesSeleccionadas = [];
+    mostrarPresentaciones();
+    return;
+  }
+
+  // Preparar el formulario para edición
+  tituloFormularioPerfume.textContent = "Editar perfume";
+
+  btnGuardarPerfume.textContent = "Actualizar perfume";
 
   btnCancelarEdicion.classList.remove("oculto");
 
@@ -1198,3 +1332,72 @@ btnMostrarLogin.addEventListener("click", () => {
     "Ingresa con tu cuenta para utilizar las recomendaciones de IA.";
 });
 
+// ==========================================
+// PERFUMEIA - PRESENTACIONES EN MILILITROS
+// ==========================================
+
+const inputNuevaPresentacion = document.getElementById("nuevaPresentacion");
+const btnAgregarPresentacion = document.getElementById("btnAgregarPresentacion");
+const listaPresentaciones = document.getElementById("listaPresentaciones");
+const mensajePresentaciones = document.getElementById("mensajePresentaciones");
+
+let presentacionesSeleccionadas = [];
+
+// Mostrar las presentaciones agregadas
+function mostrarPresentaciones() {
+  listaPresentaciones.innerHTML = "";
+
+  presentacionesSeleccionadas
+    .sort((a, b) => a - b)
+    .forEach((ml) => {
+      const elemento = document.createElement("div");
+      elemento.className = "presentacion-item";
+
+      const texto = document.createElement("span");
+      texto.textContent = `${ml} ml`;
+
+      const botonEliminar = document.createElement("button");
+      botonEliminar.type = "button";
+      botonEliminar.textContent = "×";
+      botonEliminar.title = `Eliminar presentación de ${ml} ml`;
+
+      botonEliminar.addEventListener("click", () => {
+        presentacionesSeleccionadas = presentacionesSeleccionadas.filter(
+          (presentacion) => presentacion !== ml
+        );
+
+        mostrarPresentaciones();
+      });
+
+      elemento.appendChild(texto);
+      elemento.appendChild(botonEliminar);
+
+      listaPresentaciones.appendChild(elemento);
+    });
+}
+
+// Agregar una presentación
+btnAgregarPresentacion.addEventListener("click", () => {
+  const ml = Number(inputNuevaPresentacion.value);
+
+  mensajePresentaciones.textContent = "";
+
+  if (!Number.isInteger(ml) || ml < 1 || ml > 1000) {
+    mensajePresentaciones.textContent =
+      "Ingresa una presentación válida entre 1 y 1000 ml.";
+    return;
+  }
+
+  if (presentacionesSeleccionadas.includes(ml)) {
+    mensajePresentaciones.textContent =
+      "Esta presentación ya fue agregada.";
+    return;
+  }
+
+  presentacionesSeleccionadas.push(ml);
+
+  mostrarPresentaciones();
+
+  inputNuevaPresentacion.value = "";
+  inputNuevaPresentacion.focus();
+});

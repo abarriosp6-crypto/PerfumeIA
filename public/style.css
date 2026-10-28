@@ -1148,3 +1148,136 @@ body.vista-secundaria #loginAdmin {
   margin-left: auto;
   margin-right: auto;
 }
+/* ==========================================
+   PERFUMEIA - PRESENTACIONES EN ML
+========================================== */
+
+.presentaciones-contenedor {
+  margin-top: 24px;
+  padding: 22px;
+  background: #faf9ff;
+  border: 1px solid #e8e4fa;
+  border-radius: 14px;
+}
+
+.presentaciones-ayuda {
+  margin: 8px 0 16px;
+  color: #817b95;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.presentaciones-agregar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.presentaciones-agregar input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #dedce7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+#btnAgregarPresentacion {
+  padding: 13px 18px;
+  background: #6657df;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnAgregarPresentacion:hover {
+  background: #5546cf;
+  transform: translateY(-2px);
+}
+
+.lista-presentaciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.presentacion-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  background: #eeeaff;
+  border: 1px solid #ded8ff;
+  border-radius: 10px;
+  color: #5140c9;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.presentacion-item button {
+  background: transparent;
+  border: none;
+  color: #c03959;
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.presentacion-item button:hover {
+  transform: scale(1.15);
+}
+
+.mensaje-presentaciones {
+  margin-top: 10px;
+  color: #817b95;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .presentaciones-agregar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #btnAgregarPresentacion {
+    width: 100%;
+  }
+}
+/* ==========================================
+   PRESENTACIONES EN EL CATÁLOGO
+========================================== */
+
+.perfume-presentaciones {
+  margin: 14px 0;
+  padding: 10px 12px;
+
+  background: #f4f1ff;
+  border: 1px solid #e7e0ff;
+  border-radius: 9px;
+
+  color: #6253b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.perfume-presentaciones strong {
+  color: #43348f;
+  font-weight: 600;
+}
+
+.perfume-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.perfume-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(90, 70, 160, 0.12);
+}

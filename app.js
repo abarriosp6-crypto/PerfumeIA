@@ -174,7 +174,26 @@ db.run(`
     disponible INTEGER NOT NULL DEFAULT 1
   )
 `);
+// ==========================================
+// PRESENTACIONES DE PERFUMES EN MILILITROS
+// ==========================================
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS presentaciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    perfume_id INTEGER NOT NULL,
+    mililitros INTEGER NOT NULL CHECK (mililitros > 0),
+    disponible INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (perfume_id) REFERENCES perfumes(id) ON DELETE CASCADE,
+    UNIQUE (perfume_id, mililitros)
+  )
+`, (error) => {
+  if (error) {
+    console.error("Error al crear la tabla de presentaciones:", error.message);
+  } else {
+    console.log("Tabla de presentaciones verificada correctamente.");
+  }
+});
   db.get(
     "SELECT COUNT(*) AS total FROM perfumes",
     [],
@@ -621,10 +640,11 @@ perfume.genero = datos.genero;
 }
 
 // ==========================================
-// AGREGAR PERFUME
+// AGREGAR PERFUME CON PRESENTACIONES EN ML
 // ==========================================
 
 app.post("/api/admin/perfumes", requiereAdmin, (req, res) => {
+
   const perfume = validarPerfume(req.body);
 
   if (!perfume) {
@@ -633,74 +653,247 @@ app.post("/api/admin/perfumes", requiereAdmin, (req, res) => {
     });
   }
 
-db.run(
-  `INSERT INTO perfumes
-  (nombre, marca, descripcion, tipo_aroma, genero, disponible)
-  VALUES (?, ?, ?, ?, ?, ?)`,
-  [
-    perfume.nombre,
-    perfume.marca,
-    perfume.descripcion,
-    perfume.tipo_aroma,
-    perfume.genero,
-    perfume.disponible
-  ], function(error) {
-    if (error) {
-      return res.status(500).json({
-        error: "No fue posible registrar el perfume."
-      });
-    }
+  // Validar las presentaciones recibidas
+  const presentaciones = req.body.presentaciones;
 
-    res.status(201).json({
-      mensaje: "Perfume registrado correctamente.",
-      id: this.lastID
+  if (
+    !Array.isArray(presentaciones) ||
+    presentaciones.length === 0 ||
+    !presentaciones.every(
+      ml => Number.isInteger(ml) && ml >= 1 && ml <= 1000
+    ) ||
+    new Set(presentaciones).size !== presentaciones.length
+  ) {
+    return res.status(400).json({
+      error: "Debes agregar presentaciones válidas y sin repetir."
     });
+  }
+
+  // Iniciar transacción
+  db.serialize(() => {
+
+    db.run("BEGIN TRANSACTION", error => {
+
+      if (error) {
+        return res.status(500).json({
+          error: "No fue posible iniciar el registro."
+        });
+      }
+
+      db.run(
+        `INSERT INTO perfumes
+        (nombre, marca, descripcion, tipo_aroma, genero, disponible)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          perfume.nombre,
+          perfume.marca,
+          perfume.descripcion,
+          perfume.tipo_aroma,
+          perfume.genero,
+          perfume.disponible
+        ],
+        function(error) {
+
+          if (error) {
+            return db.run("ROLLBACK", () => {
+              res.status(500).json({
+                error: "No fue posible registrar el perfume."
+              });
+            });
+          }
+
+          const perfumeId = this.lastID;
+
+          // Preparar inserción de presentaciones
+          const insertarPresentacion = db.prepare(
+            `INSERT INTO presentaciones
+            (perfume_id, mililitros, disponible)
+            VALUES (?, ?, 1)`
+          );
+
+          let errorPresentaciones = null;
+
+          presentaciones.forEach(ml => {
+            insertarPresentacion.run(
+              perfumeId,
+              ml,
+              error => {
+                if (error) {
+                  errorPresentaciones = error;
+                }
+              }
+            );
+          });
+
+          insertarPresentacion.finalize(error => {
+
+            if (error || errorPresentaciones) {
+              return db.run("ROLLBACK", () => {
+                res.status(500).json({
+                  error: "No fue posible guardar las presentaciones."
+                });
+              });
+            }
+
+            db.run("COMMIT", error => {
+
+              if (error) {
+                return db.run("ROLLBACK", () => {
+                  res.status(500).json({
+                    error: "No fue posible completar el registro."
+                  });
+                });
+              }
+
+              res.status(201).json({
+                mensaje: "Perfume y presentaciones registrados correctamente.",
+                id: perfumeId
+              });
+
+            });
+
+          });
+
+        }
+      );
+
+    });
+
   });
+
 });
 
 // ==========================================
-// EDITAR PERFUME
+// EDITAR PERFUME Y SUS PRESENTACIONES
 // ==========================================
 
 app.put("/api/admin/perfumes/:id", requiereAdmin, (req, res) => {
   const id = Number(req.params.id);
   const perfume = validarPerfume(req.body);
+  const presentaciones = req.body.presentaciones;
 
+  // Validar identificador y datos del perfume
   if (!Number.isSafeInteger(id) || id < 1 || !perfume) {
     return res.status(400).json({
       error: "Datos incorrectos."
     });
   }
 
+  // Validar presentaciones
+  if (
+    !Array.isArray(presentaciones) ||
+    presentaciones.length === 0 ||
+    !presentaciones.every(
+      ml => Number.isInteger(ml) && ml >= 1 && ml <= 1000
+    ) ||
+    new Set(presentaciones).size !== presentaciones.length
+  ) {
+    return res.status(400).json({
+      error: "Debes agregar presentaciones válidas y sin repetir."
+    });
+  }
 
-db.run(
-  `UPDATE perfumes
-  SET nombre = ?, marca = ?, descripcion = ?,
-      tipo_aroma = ?, genero = ?, disponible = ?
-  WHERE id = ?`,
-  [
-    perfume.nombre,
-    perfume.marca,
-    perfume.descripcion,
-    perfume.tipo_aroma,
-    perfume.genero,
-    perfume.disponible,
-    id
-  ], function(error) {
-    if (error) {
-      return res.status(500).json({
-        error: "No fue posible actualizar el perfume."
-      });
-    }
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION", error => {
+      if (error) {
+        return res.status(500).json({
+          error: "No fue posible iniciar la actualización."
+        });
+      }
 
-    if (this.changes === 0) {
-      return res.status(404).json({
-        error: "Perfume no encontrado."
-      });
-    }
+      // Actualizar datos generales del perfume
+      db.run(
+        `UPDATE perfumes
+         SET nombre = ?,
+             marca = ?,
+             descripcion = ?,
+             tipo_aroma = ?,
+             genero = ?,
+             disponible = ?
+         WHERE id = ?`,
+        [
+          perfume.nombre,
+          perfume.marca,
+          perfume.descripcion,
+          perfume.tipo_aroma,
+          perfume.genero,
+          perfume.disponible,
+          id
+        ],
+        function(error) {
+          if (error) {
+            return db.run("ROLLBACK", () => {
+              res.status(500).json({
+                error: "No fue posible actualizar el perfume."
+              });
+            });
+          }
 
-    res.json({
-      mensaje: "Perfume actualizado correctamente."
+          if (this.changes === 0) {
+            return db.run("ROLLBACK", () => {
+              res.status(404).json({
+                error: "Perfume no encontrado."
+              });
+            });
+          }
+
+          // Eliminar las presentaciones anteriores
+          db.run(
+            "DELETE FROM presentaciones WHERE perfume_id = ?",
+            [id],
+            error => {
+              if (error) {
+                return db.run("ROLLBACK", () => {
+                  res.status(500).json({
+                    error: "No fue posible actualizar las presentaciones."
+                  });
+                });
+              }
+
+              // Registrar las presentaciones actualizadas
+              const insertar = db.prepare(
+                `INSERT INTO presentaciones
+                 (perfume_id, mililitros, disponible)
+                 VALUES (?, ?, 1)`
+              );
+
+              let errorPresentaciones = null;
+
+              presentaciones.forEach(ml => {
+                insertar.run(id, ml, error => {
+                  if (error) {
+                    errorPresentaciones = error;
+                  }
+                });
+              });
+
+              insertar.finalize(error => {
+                if (error || errorPresentaciones) {
+                  return db.run("ROLLBACK", () => {
+                    res.status(500).json({
+                      error: "No fue posible guardar las presentaciones."
+                    });
+                  });
+                }
+
+                db.run("COMMIT", error => {
+                  if (error) {
+                    return db.run("ROLLBACK", () => {
+                      res.status(500).json({
+                        error: "No fue posible completar la actualización."
+                      });
+                    });
+                  }
+
+                  res.json({
+                    mensaje: "Perfume y presentaciones actualizados correctamente."
+                  });
+                });
+              });
+            }
+          );
+        }
+      );
     });
   });
 });
@@ -866,7 +1059,56 @@ app.get("/api/historial", requiereAdmin, (req, res) => {
     res.json(filas);
   });
 });
+// ==========================================
+// CONSULTAR PRESENTACIONES DE UN PERFUME
+// ==========================================
 
+app.get("/api/perfumes/:id/presentaciones", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return res.status(400).json({
+      error: "Identificador de perfume incorrecto."
+    });
+  }
+
+  db.get(
+    "SELECT id FROM perfumes WHERE id = ?",
+    [id],
+    (error, perfume) => {
+      if (error) {
+        return res.status(500).json({
+          error: "No fue posible consultar el perfume."
+        });
+      }
+
+      if (!perfume) {
+        return res.status(404).json({
+          error: "Perfume no encontrado."
+        });
+      }
+
+      db.all(
+        `SELECT id, mililitros, disponible
+         FROM presentaciones
+         WHERE perfume_id = ?
+         ORDER BY mililitros ASC`,
+        [id],
+        (error, presentaciones) => {
+          if (error) {
+            return res.status(500).json({
+              error: "No fue posible consultar las presentaciones."
+            });
+          }
+
+          res.json({
+            presentaciones
+          });
+        }
+      );
+    }
+  );
+});
 // ==========================================
 // INICIAR SERVIDOR
 // ==========================================
