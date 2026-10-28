@@ -37,6 +37,16 @@ const perfilNombre = document.getElementById("perfilNombre");
 const perfilCorreo = document.getElementById("perfilCorreo");
 const perfilRol = document.getElementById("perfilRol");
 const perfilFecha = document.getElementById("perfilFecha");
+// ==========================================
+// PERFUMEIA - EDICIÓN DEL NOMBRE
+// ==========================================
+
+const btnEditarNombre = document.getElementById("btnEditarNombre");
+const formEditarNombre = document.getElementById("formEditarNombre");
+const editarPerfilNombre = document.getElementById("editarPerfilNombre");
+const btnGuardarNombre = document.getElementById("btnGuardarNombre");
+const btnCancelarNombre = document.getElementById("btnCancelarNombre");
+const mensajeEditarNombre = document.getElementById("mensajeEditarNombre");
 
 const btnAdministracion = document.getElementById("btnAdministracion");
 const administracion = document.getElementById("administracion");
@@ -1307,6 +1317,91 @@ consulta.scrollIntoView({
   }
 });
 // ==========================================
+// PERFUMEIA - EDITAR NOMBRE DEL PERFIL
+// ==========================================
+
+// Mostrar formulario de edición
+btnEditarNombre.addEventListener("click", () => {
+
+  editarPerfilNombre.value = perfilNombre.textContent.trim();
+
+  mensajeEditarNombre.textContent = "";
+
+  formEditarNombre.classList.remove("oculto");
+
+  btnEditarNombre.classList.add("oculto");
+
+  editarPerfilNombre.focus();
+
+});
+
+// Cancelar edición
+btnCancelarNombre.addEventListener("click", () => {
+
+  formEditarNombre.classList.add("oculto");
+
+  btnEditarNombre.classList.remove("oculto");
+
+  mensajeEditarNombre.textContent = "";
+
+});
+
+// Guardar nuevo nombre
+formEditarNombre.addEventListener("submit", async (event) => {
+
+  event.preventDefault();
+
+  const nuevoNombre = editarPerfilNombre.value.trim();
+
+  if (nuevoNombre.length < 2 || nuevoNombre.length > 100) {
+    mensajeEditarNombre.textContent =
+      "El nombre debe tener entre 2 y 100 caracteres.";
+    return;
+  }
+
+  btnGuardarNombre.disabled = true;
+  mensajeEditarNombre.textContent = "Guardando cambios...";
+
+  try {
+
+    const respuesta = await fetch("/api/perfil/nombre", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nombre: nuevoNombre
+      })
+    });
+
+    const datos = await leerJSON(respuesta);
+
+    perfilNombre.textContent = datos.nombre;
+
+    // Actualizar el nombre en la sesión local del frontend
+    if (usuarioActual && !esAdministrador) {
+      usuarioActual.nombre = datos.nombre;
+    }
+
+    formEditarNombre.classList.add("oculto");
+
+    btnEditarNombre.classList.remove("oculto");
+
+    alert("Tu nombre se actualizó correctamente.");
+
+  } catch (error) {
+
+    mensajeEditarNombre.textContent = mostrarError(error);
+
+  } finally {
+
+    btnGuardarNombre.disabled = false;
+
+  }
+
+});
+// ==========================================
 // PERFUMEIA - MI PERFIL
 // ==========================================
 
@@ -1318,6 +1413,13 @@ btnPerfil.addEventListener("click", async () => {
   }
 
   mostrarSeccion(perfil, btnPerfil);
+  // Restablecer el formulario al abrir el perfil
+formEditarNombre.classList.add("oculto");
+btnEditarNombre.classList.remove("oculto");
+mensajeEditarNombre.textContent = "";
+
+// El administrador no puede editar este perfil
+btnEditarNombre.classList.toggle("oculto", esAdministrador);
 
   perfilNombre.textContent = "Cargando...";
   perfilCorreo.textContent = "Cargando...";

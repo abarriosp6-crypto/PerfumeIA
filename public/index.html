@@ -318,10 +318,63 @@
 
     <h3>Información personal</h3>
 
-    <div class="admin-campo">
-      <label>Nombre completo</label>
-      <p id="perfilNombre">Cargando...</p>
+<!-- NOMBRE DEL USUARIO -->
+<div class="admin-campo">
+
+  <label for="editarPerfilNombre">Nombre completo</label>
+
+  <p id="perfilNombre">Cargando...</p>
+
+  <!-- BOTÓN PARA EDITAR -->
+  <button
+    id="btnEditarNombre"
+    type="button"
+    class="btn-perfil-editar"
+  >
+    ✏️ Editar nombre
+  </button>
+
+  <!-- FORMULARIO DE EDICIÓN -->
+  <form id="formEditarNombre" class="oculto">
+
+    <input
+      type="text"
+      id="editarPerfilNombre"
+      name="nombre"
+      placeholder="Escribe tu nombre completo"
+      minlength="2"
+      maxlength="100"
+      autocomplete="name"
+      required
+    >
+
+    <div class="perfil-acciones">
+
+      <button
+        type="submit"
+        id="btnGuardarNombre"
+      >
+        Guardar cambios
+      </button>
+
+      <button
+        type="button"
+        id="btnCancelarNombre"
+      >
+        Cancelar
+      </button>
+
     </div>
+
+    <p
+      id="mensajeEditarNombre"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+</div>
 
     <div class="admin-campo">
       <label>Correo electrónico</label>
@@ -656,7 +709,7 @@
 
 </section>
 
-    
+
     <!-- =====================================
          PANEL DE ADMINISTRACIÓN
     ====================================== -->

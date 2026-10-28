@@ -957,7 +957,81 @@ app.post(
 // ==========================================
 
 app.get("/api/perfil", requiereUsuario, (req, res) => {
+// ==========================================
+// PERFUMEIA - ACTUALIZAR NOMBRE DEL PERFIL
+// ==========================================
 
+app.put("/api/perfil/nombre", requiereUsuario, (req, res) => {
+
+  // El administrador tiene una cuenta independiente
+  if (req.session.administrador === true) {
+    return res.status(403).json({
+      error: "Esta opción solo está disponible para usuarios."
+    });
+  }
+
+  const usuarioId = req.session.usuarioId;
+  const { nombre } = req.body || {};
+
+  // Validar el nombre
+  if (
+    typeof nombre !== "string" ||
+    nombre.trim().length < 2 ||
+    nombre.trim().length > 100
+  ) {
+    return res.status(400).json({
+      error: "El nombre debe tener entre 2 y 100 caracteres."
+    });
+  }
+
+  const nombreLimpio = nombre.trim();
+
+  // Actualizar el nombre en SQLite
+  db.run(
+    `UPDATE usuarios
+     SET nombre = ?
+     WHERE id = ? AND rol = 'usuario'`,
+    [nombreLimpio, usuarioId],
+    function(error) {
+
+      if (error) {
+        console.error("Error al actualizar nombre:", error.message);
+
+        return res.status(500).json({
+          error: "No se pudo actualizar el nombre."
+        });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({
+          error: "Usuario no encontrado."
+        });
+      }
+
+      // Actualizar también el nombre de la sesión
+      req.session.usuarioNombre = nombreLimpio;
+
+      req.session.save(error => {
+
+        if (error) {
+          console.error("Error al guardar sesión:", error.message);
+
+          return res.status(500).json({
+            error: "El nombre se actualizó, pero no se pudo guardar la sesión."
+          });
+        }
+
+        res.json({
+          mensaje: "Nombre actualizado correctamente.",
+          nombre: nombreLimpio
+        });
+
+      });
+
+    }
+  );
+
+});
   // El administrador utiliza una cuenta independiente
   if (req.session.administrador === true) {
     return res.json({

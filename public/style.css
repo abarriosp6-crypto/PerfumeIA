@@ -2077,3 +2077,125 @@ line-height: 1.8;
     width: 100%;
   }
 }
+/* ==========================================
+   PERFUMEIA - EDICIÓN DEL PERFIL
+========================================== */
+
+/* Botón editar nombre */
+#perfil #btnEditarNombre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 1px solid #ded7ff;
+  border-radius: 10px;
+  background: #f1edff;
+  color: #6548d8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#perfil #btnEditarNombre:hover {
+  background: #6548d8;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(101, 72, 216, 0.2);
+}
+
+/* Formulario de edición */
+#perfil #formEditarNombre {
+  margin-top: 14px;
+}
+
+/* Campo para escribir el nombre */
+#perfil #editarPerfilNombre {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9d1ff;
+  border-radius: 10px;
+  background: white;
+  color: #19152c;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+#perfil #editarPerfilNombre:focus {
+  border-color: #7657e8;
+  box-shadow: 0 0 0 3px rgba(118, 87, 232, 0.12);
+}
+
+/* Contenedor de botones */
+#perfil .perfil-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* Botón guardar */
+#perfil #btnGuardarNombre {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #6548d8;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#perfil #btnGuardarNombre:hover {
+  background: #5034bc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(101, 72, 216, 0.2);
+}
+
+/* Botón cancelar */
+#perfil #btnCancelarNombre {
+  padding: 11px 20px;
+  border: 1px solid #ded7ff;
+  border-radius: 10px;
+  background: white;
+  color: #6548d8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#perfil #btnCancelarNombre:hover {
+  background: #f1edff;
+  transform: translateY(-2px);
+}
+
+/* Mensajes del formulario */
+#perfil #mensajeEditarNombre {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Evitar que los estilos de botones muestren elementos ocultos */
+#perfil #btnEditarNombre.oculto,
+#perfil #formEditarNombre.oculto {
+  display: none;
+}
+
+/* Diseño para teléfonos */
+@media (max-width: 600px) {
+  #perfil .perfil-acciones {
+    flex-direction: column;
+  }
+
+  #perfil #btnGuardarNombre,
+  #perfil #btnCancelarNombre {
+    width: 100%;
+  }
+}
