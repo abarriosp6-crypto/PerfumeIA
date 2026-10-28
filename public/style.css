@@ -1,0 +1,1150 @@
+/* ==========================================
+   ESTILOS GENERALES - PERFUMEIA
+========================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f7f7fb;
+  color: #252438;
+  min-height: 100vh;
+}
+
+/* ==========================================
+   MENÚ LATERAL
+========================================== */
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 245px;
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e8e7ef;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 45px;
+}
+
+.logo-icon {
+  width: 42px;
+  height: 42px;
+  background: #6c5ce7;
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.logo h2 {
+  font-size: 20px;
+}
+
+.logo span {
+  font-size: 12px;
+  color: #9693a5;
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 13px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #6c6879;
+}
+
+.nav-item:hover {
+  background: #f1efff;
+  color: #6254d9;
+}
+
+.nav-item.active {
+  background: #eeeaff;
+  color: #6254d9;
+  font-weight: bold;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  border-top: 1px solid #eeeef3;
+  padding-top: 20px;
+  color: #777386;
+}
+
+.sidebar-bottom p {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.sidebar-bottom span {
+  font-size: 11px;
+  color: #aaa7b5;
+}
+
+/* ==========================================
+   CONTENIDO PRINCIPAL
+========================================== */
+
+.main {
+  margin-left: 245px;
+  padding: 50px 7%;
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 35px;
+}
+
+.bienvenida {
+  color: #6c5ce7;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+header h1 {
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+.subtitulo {
+  color: #777386;
+  line-height: 1.6;
+  max-width: 650px;
+}
+
+.estado {
+  background: #ecfff5;
+  color: #21895b;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.punto {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  background: #2ecc71;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* ==========================================
+   TARJETA DE CONSULTA
+========================================== */
+
+.consulta-card {
+  background: white;
+  border: 1px solid #ecebf2;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 8px 30px rgba(50, 45, 90, 0.05);
+}
+
+.card-title {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.icono {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  background: #eeeaff;
+  color: #6254d9;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-title h2 {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+.card-title p {
+  color: #8b8798;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid #dedce7;
+  border-radius: 13px;
+  padding: 18px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.6;
+  outline: none;
+}
+
+textarea:focus {
+  border-color: #7567e8;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.acciones {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#contador {
+  font-size: 12px;
+  color: #9995a5;
+}
+
+#btnRecomendar {
+  border: none;
+  background: #6657df;
+  color: white;
+  padding: 13px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#btnRecomendar:hover {
+  background: #5546cf;
+}
+
+#btnRecomendar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   EJEMPLOS DE CONSULTAS
+========================================== */
+
+.ejemplos {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #efedf4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.ejemplos span {
+  font-size: 13px;
+  color: #8c8898;
+}
+
+.chip {
+  border: 1px solid #e1dfee;
+  background: #faf9ff;
+  color: #635d75;
+  border-radius: 20px;
+  padding: 8px 13px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chip:hover {
+  background: #eeeaff;
+  border-color: #cbc5f5;
+}
+
+/* ==========================================
+   INDICADOR DE CARGA
+========================================== */
+
+.cargando {
+  background: white;
+  margin-top: 25px;
+  border-radius: 18px;
+  padding: 45px;
+  text-align: center;
+  border: 1px solid #ecebf2;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 18px;
+  border: 4px solid #e8e5fa;
+  border-top-color: #6657df;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cargando h3 {
+  margin-bottom: 8px;
+}
+
+.cargando p {
+  color: #918d9e;
+}
+
+/* ==========================================
+   RESULTADOS E HISTORIAL
+========================================== */
+
+.resultado,
+.historial {
+  background: white;
+  margin-top: 25px;
+  padding: 30px;
+  border-radius: 18px;
+  border: 1px solid #ecebf2;
+  box-shadow: 0 8px 30px rgba(50, 45, 90, 0.05);
+}
+
+.resultado-header,
+.historial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #efedf4;
+}
+
+.etiqueta {
+  font-size: 11px;
+  letter-spacing: 1px;
+  font-weight: bold;
+  color: #6c5ce7;
+}
+
+.resultado-header h2,
+.historial-header h2 {
+  margin-top: 6px;
+  font-size: 21px;
+}
+
+.check {
+  color: #21895b;
+  background: #ecfff5;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.respuesta-ia {
+  margin-top: 25px;
+  line-height: 1.6;
+  color: #4e4a5d;
+}
+
+.nombre-perfume {
+  margin-top: 22px;
+  margin-bottom: 8px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #252438;
+  text-transform: uppercase;
+}
+
+.nombre-perfume:first-child {
+  margin-top: 0;
+}
+
+.detalle-perfume {
+  margin-bottom: 6px;
+  line-height: 1.6;
+  color: #5f5a6d;
+}
+
+.detalle-perfume strong {
+  color: #393548;
+}
+
+#btnCerrarHistorial {
+  border: none;
+  background: #f0eef9;
+  color: #6254d9;
+  padding: 9px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.historial-item {
+  padding: 20px 0;
+  border-bottom: 1px solid #efedf4;
+}
+
+.historial-item:last-child {
+  border-bottom: none;
+}
+
+.historial-item h3 {
+  font-size: 15px;
+  margin-bottom: 7px;
+}
+
+.historial-item small {
+  color: #aaa6b4;
+}
+
+.historial-item p {
+  margin-top: 10px;
+  color: #6e697b;
+  line-height: 1.6;
+}
+
+.respuesta-historial {
+  margin-top: 15px;
+}
+
+/* ==========================================
+   CATÁLOGO DE PERFUMES
+========================================== */
+
+.catalogo {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  margin-top: 28px;
+  box-shadow: 0 10px 35px rgba(30, 35, 70, 0.05);
+}
+
+.catalogo-filtros {
+  margin: 28px 0;
+}
+
+#buscarPerfume {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid #e0def0;
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#buscarPerfume:focus {
+  border-color: #6854e8;
+}
+
+.catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+.perfume-card {
+  background: #fff;
+  border: 1px solid #eeecf5;
+  border-radius: 16px;
+  padding: 22px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.perfume-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(50, 40, 110, 0.09);
+}
+
+.perfume-card h3 {
+  font-size: 19px;
+  color: #19223a;
+  margin-bottom: 8px;
+}
+
+.perfume-marca {
+  color: #6854e8;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.perfume-descripcion {
+  color: #70768b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.perfume-tipo {
+  display: inline-block;
+  background: #f0edff;
+  color: #6854e8;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-top: 14px;
+}
+
+.perfume-disponible {
+  display: block;
+  color: #15945b;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+#btnCerrarCatalogo {
+  background: #f0edff;
+  color: #6854e8;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#btnCerrarCatalogo:hover {
+  background: #e3ddff;
+}
+
+/* ==========================================
+   PANEL DE ADMINISTRACIÓN
+========================================== */
+
+#administracion {
+  background: #ffffff;
+  border: 1px solid #ecebf2;
+  border-radius: 20px;
+  padding: 32px;
+  margin-top: 28px;
+  box-shadow: 0 10px 35px rgba(30, 35, 70, 0.05);
+}
+
+#administracion .historial-header {
+  gap: 20px;
+}
+
+#administracion .historial-header p {
+  color: #8b8798;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+#btnCerrarAdministracion {
+  background: #f0edff;
+  color: #6854e8;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#btnCerrarAdministracion:hover {
+  background: #e3ddff;
+}
+
+/* FORMULARIO ADMINISTRATIVO */
+
+.admin-formulario {
+  margin-top: 28px;
+  padding: 28px;
+  background: #faf9ff;
+  border: 1px solid #ece9fb;
+  border-radius: 16px;
+}
+
+.admin-formulario h3 {
+  color: #252438;
+  font-size: 19px;
+  margin-bottom: 24px;
+}
+
+.admin-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.admin-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.admin-campo label {
+  color: #514c62;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-campo input,
+.admin-campo select {
+  width: 100%;
+  padding: 14px 15px;
+  background: #ffffff;
+  border: 1px solid #dedce7;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #252438;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.admin-campo input:focus,
+.admin-campo select:focus {
+  border-color: #7567e8;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.admin-campo input::placeholder {
+  color: #aaa7b5;
+}
+
+#btnGuardarPerfume {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 11px;
+  background: #6657df;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#btnGuardarPerfume:hover:not(:disabled) {
+  background: #5546cf;
+}
+
+#btnGuardarPerfume:disabled {
+  background: #c5bfeb;
+  cursor: not-allowed;
+}
+
+#mensajeAdmin {
+  margin-top: 14px;
+  color: #89839b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* LISTADO ADMINISTRATIVO */
+
+.admin-listado {
+  margin-top: 34px;
+}
+
+.admin-listado h3 {
+  font-size: 19px;
+  color: #252438;
+  margin-bottom: 20px;
+}
+
+#listaAdminPerfumes {
+  display: grid;
+  gap: 14px;
+}
+
+#listaAdminPerfumes > p {
+  background: #faf9ff;
+  border: 1px dashed #dcd7f4;
+  border-radius: 12px;
+  padding: 22px;
+  color: #8b8798;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-perfume-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid #ecebf2;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.admin-perfume-info {
+  min-width: 0;
+}
+
+.admin-perfume-info h4 {
+  color: #252438;
+  font-size: 16px;
+  margin-bottom: 7px;
+}
+
+.admin-perfume-info p {
+  color: #777386;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-acciones {
+  display: flex;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.admin-btn-editar,
+.admin-btn-eliminar {
+  border: none;
+  border-radius: 9px;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-btn-editar {
+  background: #eeeaff;
+  color: #6254d9;
+}
+
+.admin-btn-editar:hover:not(:disabled) {
+  background: #e1dbff;
+}
+
+.admin-btn-eliminar {
+  background: #fff0f0;
+  color: #d64b57;
+}
+
+.admin-btn-eliminar:hover:not(:disabled) {
+  background: #ffe0e3;
+}
+
+.admin-btn-editar:disabled,
+.admin-btn-eliminar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   UTILIDADES Y PIE DE PÁGINA
+========================================== */
+
+.oculto {
+  display: none !important;
+}
+
+footer {
+  margin-top: 35px;
+  text-align: center;
+  color: #aaa7b5;
+  font-size: 12px;
+}
+
+/* ==========================================
+   DISEÑO RESPONSIVE
+========================================== */
+
+@media (max-width: 800px) {
+
+  .sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+  }
+
+  .logo {
+    margin-bottom: 20px;
+  }
+
+  .sidebar-bottom {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+    padding: 30px 20px;
+  }
+
+  header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  header h1 {
+    font-size: 27px;
+  }
+
+  .acciones {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  #btnRecomendar {
+    width: 100%;
+  }
+
+  .resultado-header,
+  .historial-header {
+    gap: 15px;
+  }
+
+  .catalogo,
+  #administracion {
+    padding: 20px;
+  }
+
+  .catalogo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #administracion .historial-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-formulario {
+    padding: 20px;
+  }
+
+  .admin-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-perfume-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-acciones {
+    width: 100%;
+  }
+
+  .admin-btn-editar,
+  .admin-btn-eliminar {
+    flex: 1;
+  }
+}
+
+/* ==========================================
+   BOTÓN CANCELAR EDICIÓN
+========================================== */
+
+#btnCancelarEdicion {
+  background: #f0edff;
+  color: #6554e8;
+  border: 1px solid #e4dfff;
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnCancelarEdicion:hover {
+  background: #e5dfff;
+  color: #5140d6;
+  transform: translateY(-1px);
+}
+
+#btnCancelarEdicion:active {
+  transform: translateY(0);
+}
+
+#btnCancelarEdicion.oculto {
+  display: none;
+}
+/* ==========================================
+   PERFUMEIA - INICIO DE SESIÓN Y REGISTRO
+========================================== */
+
+/* Contenedor principal */
+#loginAdmin {
+  max-width: 850px;
+  margin: 35px auto;
+  padding: 35px;
+  background: #ffffff;
+  border: 1px solid #ece9fb;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(50, 40, 110, 0.06);
+}
+
+/* Encabezado */
+#loginAdmin .historial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 25px;
+}
+
+#loginAdmin .historial-header h2 {
+  font-size: 26px;
+  margin: 8px 0;
+  color: #252438;
+}
+
+#loginAdmin .historial-header p {
+  font-size: 14px;
+  color: #8b8798;
+  line-height: 1.6;
+}
+
+/* Botón cerrar */
+#btnCerrarLogin {
+  background: #f0edff;
+  color: #6854e8;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnCerrarLogin:hover {
+  background: #e3ddff;
+  transform: translateY(-2px);
+}
+
+/* Tarjeta del formulario */
+#loginAdmin .admin-formulario {
+  max-width: 620px;
+  margin: 30px auto 0;
+  padding: 35px;
+  background: #faf9ff;
+  border: 1px solid #ece9fb;
+  border-radius: 18px;
+}
+
+#loginAdmin .admin-formulario h3 {
+  font-size: 22px;
+  color: #252438;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Formularios */
+#formLoginUsuario,
+#formRegistro {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Campos */
+#loginAdmin .admin-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 15px;
+}
+
+#loginAdmin .admin-campo label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #514c62;
+}
+
+#loginAdmin .admin-campo input {
+  width: 100%;
+  padding: 15px;
+  background: #ffffff;
+  border: 1px solid #dedce7;
+  border-radius: 11px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #252438;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+#loginAdmin .admin-campo input:focus {
+  border-color: #7567e8;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+}
+
+/* Botones principales */
+#btnIngresar,
+#btnRegistrar,
+#btnIngresarAdmin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  background: #6657df;
+  color: #ffffff;
+  border: none;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btnIngresar:hover:not(:disabled),
+#btnRegistrar:hover:not(:disabled),
+#btnIngresarAdmin:hover:not(:disabled) {
+  background: #5546cf;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(108, 92, 231, 0.18);
+}
+
+#btnIngresar:disabled,
+#btnRegistrar:disabled,
+#btnIngresarAdmin:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Enlaces de registro e inicio */
+.texto-acceso {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #777386;
+}
+
+#btnMostrarRegistro,
+#btnMostrarLogin {
+  background: transparent;
+  border: none;
+  color: #6657df;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+#btnMostrarRegistro:hover,
+#btnMostrarLogin:hover {
+  color: #4635c5;
+  text-decoration: underline;
+}
+
+/* Separador del administrador */
+#panelLogin hr {
+  border: none;
+  border-top: 1px solid #e4e0f2;
+  margin: 28px 0;
+}
+
+/* Acceso administrativo */
+#btnIngresarAdmin {
+  background: #eeeaff;
+  color: #6254d9;
+  border: 1px solid #ded8ff;
+  margin-top: 15px;
+}
+
+#btnIngresarAdmin:hover:not(:disabled) {
+  background: #ded7ff;
+  color: #5140c9;
+}
+
+/* Mensajes */
+#mensajeLogin,
+#mensajeLoginAdmin,
+#mensajeRegistro {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6254d9;
+}
+
+/* Texto del registro */
+#panelRegistro > p {
+  color: #777386;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+/* Adaptación para celulares */
+@media (max-width: 600px) {
+
+  #loginAdmin {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  #loginAdmin .admin-formulario {
+    padding: 22px;
+  }
+
+  #loginAdmin .historial-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #loginAdmin .historial-header h2 {
+    font-size: 23px;
+  }
+
+  #btnCerrarLogin {
+    align-self: flex-end;
+  }
+
+  #loginAdmin .admin-formulario h3 {
+    font-size: 20px;
+  }
+}
+/* ==========================================
+   PERFUMEIA - NAVEGACIÓN POR APARTADOS
+========================================== */
+
+/* Ocultar contenido principal al abrir otro apartado */
+body.vista-secundaria .consulta-card {
+  display: none !important;
+}
+
+body.vista-secundaria .main > header {
+  display: none !important;
+}
+
+/* Cada apartado comienza desde arriba */
+body.vista-secundaria #loginAdmin,
+body.vista-secundaria #catalogo,
+body.vista-secundaria #administracion,
+body.vista-secundaria #historial {
+  margin-top: 0;
+}
+
+/* Pantalla independiente de inicio de sesión */
+body.vista-secundaria #loginAdmin {
+  max-width: 850px;
+  margin-left: auto;
+  margin-right: auto;
+}

@@ -1,0 +1,350 @@
+
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
+const Groq = require("groq-sdk");
+
+const app = express();
+const PORT = 3000;
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
+app.use(cors());
+app.use(express.json());
+
+app.use(
+  express.static(path.join(__dirname, "public"))
+);
+
+// ==========================================
+// BASE DE DATOS
+// ==========================================
+
+const db = new sqlite3.Database(
+  path.join(__dirname, "perfumeia.db"),
+  (error) => {
+    if (error) {
+      console.error("Error de SQLite:", error.message);
+    } else {
+      console.log("Base de datos conectada correctamente.");
+    }
+  }
+);
+
+db.serialize(() => {
+
+  // Tabla de historial
+  db.run(`
+    CREATE TABLE IF NOT EXISTS historial (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+      consulta TEXT NOT NULL,
+      respuesta TEXT NOT NULL
+    )
+  `);
+
+  // Tabla de perfumes
+  db.run(`
+    CREATE TABLE IF NOT EXISTS perfumes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL,
+      marca TEXT NOT NULL,
+      descripcion TEXT NOT NULL,
+      tipo_aroma TEXT NOT NULL,
+      disponible INTEGER NOT NULL DEFAULT 1
+    )
+  `);
+
+  // Agregar perfumes iniciales solamente
+  // si la tabla todavía está vacía
+  db.get(
+    "SELECT COUNT(*) AS total FROM perfumes",
+    [],
+    (error, fila) => {
+
+      if (error) {
+        console.error("Error al revisar perfumes:", error.message);
+        return;
+      }
+
+      if (fila.total > 0) {
+        console.log("Catálogo existente conservado.");
+        return;
+      }
+
+      const perfumes = [
+        [
+          "Sauvage",
+          "Dior",
+          "Fragancia masculina con notas frescas y especiadas. Ideal para uso diario.",
+          "Fresco aromático",
+          1
+        ],
+        [
+          "Bleu de Chanel",
+          "Chanel",
+          "Perfume elegante y versátil, recomendado para ocasiones casuales y formales.",
+          "Amaderado aromático",
+          1
+        ],
+        [
+          "Acqua di Giò",
+          "Giorgio Armani",
+          "Aroma ligero y refrescante, ideal para climas calurosos.",
+          "Acuático cítrico",
+          1
+        ],
+        [
+          "Libre",
+          "Yves Saint Laurent",
+          "Fragancia femenina elegante con notas de lavanda y flores blancas.",
+          "Floral",
+          1
+        ],
+        [
+          "La Vie Est Belle",
+          "Lancôme",
+          "Perfume femenino con notas dulces y florales para ocasiones especiales.",
+          "Dulce floral",
+          1
+        ],
+        [
+          "Eros",
+          "Versace",
+          "Fragancia masculina intensa con notas frescas, dulces y amaderadas.",
+          "Aromático dulce",
+          1
+        ]
+      ];
+
+      const insertar = db.prepare(`
+        INSERT INTO perfumes
+        (nombre, marca, descripcion, tipo_aroma, disponible)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      perfumes.forEach((perfume) => {
+        insertar.run(perfume);
+      });
+
+      insertar.finalize((error) => {
+        if (error) {
+          console.error("Error al crear catálogo:", error.message);
+        } else {
+          console.log("Catálogo inicial guardado en SQLite.");
+        }
+      });
+    }
+  );
+});
+
+// ==========================================
+// API - CONSULTAR CATÁLOGO
+// ==========================================
+
+app.get("/api/perfumes", (req, res) => {
+
+  db.all(
+    `
+    SELECT
+      id,
+      nombre,
+      marca,
+      descripcion,
+      tipo_aroma,
+      disponible
+    FROM perfumes
+    ORDER BY id ASC
+    `,
+    [],
+    (error, filas) => {
+
+      if (error) {
+        console.error(error.message);
+
+        return res.status(500).json({
+          error: "No fue posible cargar el catálogo."
+        });
+      }
+
+      res.json(filas);
+    }
+  );
+});
+
+// ==========================================
+// API - GENERAR RECOMENDACIÓN
+// ==========================================
+
+app.post("/api/recomendar", async (req, res) => {
+
+  const { consulta } = req.body || {};
+
+  if (
+    typeof consulta !== "string" ||
+    consulta.trim().length < 10
+  ) {
+    return res.status(400).json({
+      error: "Ingresa una descripción más completa."
+    });
+  }
+
+  if (consulta.length > 500) {
+    return res.status(400).json({
+      error: "La consulta no puede superar los 500 caracteres."
+    });
+  }
+
+  try {
+
+    const respuestaIA =
+      await groq.chat.completions.create({
+
+        model: "openai/gpt-oss-20b",
+
+        messages: [
+          {
+            role: "system",
+            content: `
+Eres PerfumeIA, un asistente especializado
+en recomendaciones de perfumes.
+
+Tu función es recomendar perfumes según
+los gustos, ocasión, clima y necesidades
+indicadas por el cliente.
+
+Debes recomendar EXACTAMENTE 2 perfumes.
+
+IMPORTANTE:
+
+Responde SIEMPRE utilizando exactamente
+este formato:
+
+PERFUME 1: Nombre del perfume
+TIPO: Tipo de aroma
+MOTIVO: Explicación breve de por qué lo recomiendas
+
+PERFUME 2: Nombre del perfume
+TIPO: Tipo de aroma
+MOTIVO: Explicación breve de por qué lo recomiendas
+
+REGLAS:
+
+- No utilices Markdown.
+- No utilices asteriscos.
+- No utilices listas con guiones.
+- No agregues precios.
+- No agregues texto antes de PERFUME 1.
+- No agregues texto después del segundo MOTIVO.
+- Las recomendaciones deben ser claras y breves.
+`
+          },
+          {
+            role: "user",
+            content: consulta.trim()
+          }
+        ]
+      });
+
+    const recomendacion =
+      respuestaIA.choices[0]?.message?.content;
+
+    if (!recomendacion) {
+      throw new Error("La IA devolvió una respuesta vacía.");
+    }
+
+    // Guardar consulta y respuesta
+    db.run(
+      `
+      INSERT INTO historial
+      (consulta, respuesta)
+      VALUES (?, ?)
+      `,
+      [consulta.trim(), recomendacion],
+
+      function (error) {
+
+        if (error) {
+          console.error("Error al guardar historial:", error.message);
+
+          return res.status(500).json({
+            error: "La recomendación fue generada, pero no pudo guardarse."
+          });
+        }
+
+        res.json({
+          mensaje: "Recomendación generada correctamente.",
+          id: this.lastID,
+          consulta: consulta.trim(),
+          recomendacion
+        });
+      }
+    );
+
+  } catch (error) {
+
+    console.error("Error de IA:", error.message);
+
+    res.status(500).json({
+      error: "No fue posible obtener la recomendación. Intenta nuevamente."
+    });
+  }
+});
+
+// ==========================================
+// API - HISTORIAL
+// ==========================================
+
+app.get("/api/historial", (req, res) => {
+
+  db.all(
+    `
+    SELECT
+      id,
+      fecha,
+      consulta,
+      respuesta
+    FROM historial
+    ORDER BY id DESC
+    `,
+    [],
+    (error, filas) => {
+
+      if (error) {
+        return res.status(500).json({
+          error: "No fue posible consultar el historial."
+        });
+      }
+
+      res.json(filas);
+    }
+  );
+});
+
+// ==========================================
+// INICIAR SERVIDOR
+// ==========================================
+
+app.listen(PORT, () => {
+
+  console.log("");
+  console.log("=================================");
+  console.log("       PERFUMEIA FUNCIONANDO");
+  console.log("=================================");
+  console.log(`Servidor: http://localhost:${PORT}`);
+  console.log("Groq: preparado");
+  console.log("SQLite: preparado");
+  console.log("Catálogo: /api/perfumes");
+  console.log("=================================");
+  console.log("");
+
+});

@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PerfumeIA</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <aside class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <div>
+        <h2>PerfumeIA</h2>
+        <span>Tu aroma ideal</span>
+      </div>
+    </div>
+
+    <nav>
+      <button class="nav-item active">⌂ Inicio</button>
+      <button class="nav-item">✦ Nueva consulta</button>
+      <button class="nav-item" id="btnCatalogo">▦ Catálogo</button>
+      <button class="nav-item" id="btnHistorial">◷ Historial</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <p>Asistente inteligente</p>
+      <span>Powered by Groq</span>
+    </div>
+
+  </aside>
+
+
+  <main class="main">
+
+    <header>
+      <div>
+        <p class="bienvenida">Bienvenido a PerfumeIA 👋</p>
+        <h1>Encuentra tu próxima fragancia</h1>
+        <p class="subtitulo">
+          Cuéntanos qué estás buscando y nuestra inteligencia
+          artificial te ayudará a encontrar perfumes ideales para ti.
+        </p>
+      </div>
+
+      <div class="estado">
+        <span class="punto"></span>
+        IA disponible
+      </div>
+    </header>
+
+
+    <!-- CONSULTA DE INTELIGENCIA ARTIFICIAL -->
+
+    <section class="consulta-card">
+
+      <div class="card-title">
+        <div class="icono">✦</div>
+
+        <div>
+          <h2>¿Qué tipo de perfume buscas?</h2>
+          <p>
+            Describe tus gustos, ocasión, clima o el estilo
+            de fragancia que prefieres.
+          </p>
+        </div>
+      </div>
+
+      <textarea
+        id="consulta"
+        maxlength="500"
+        placeholder="Ejemplo: Busco un perfume fresco y elegante para hombre, para utilizar todos los días..."
+      ></textarea>
+
+      <div class="acciones">
+        <span id="contador">0 / 500</span>
+
+        <button id="btnRecomendar">
+          ✦ Obtener recomendación
+        </button>
+      </div>
+
+      <div class="ejemplos">
+        <span>Prueba con:</span>
+
+        <button class="chip">
+          Fresco y cítrico
+        </button>
+
+        <button class="chip">
+          Elegante para la noche
+        </button>
+
+        <button class="chip">
+          Dulce y femenino
+        </button>
+
+        <button class="chip">
+          Para clima caluroso
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- INDICADOR DE CARGA -->
+
+    <section id="cargando" class="cargando oculto">
+      <div class="spinner"></div>
+      <h3>PerfumeIA está analizando tus preferencias...</h3>
+      <p>Estamos buscando opciones ideales para ti.</p>
+    </section>
+
+
+    <!-- RESULTADOS DE LA IA -->
+
+    <section id="resultado" class="resultado oculto">
+
+      <div class="resultado-header">
+        <div>
+          <span class="etiqueta">RECOMENDACIÓN DE IA</span>
+          <h2>Estas fragancias pueden gustarte</h2>
+        </div>
+
+        <span class="check">✓ Generada</span>
+      </div>
+
+      <div id="respuestaIA" class="respuesta-ia"></div>
+
+    </section>
+
+
+    <!-- HISTORIAL DE CONSULTAS -->
+
+    <section id="historial" class="historial oculto">
+
+      <div class="historial-header">
+        <div>
+          <span class="etiqueta">HISTORIAL</span>
+          <h2>Consultas recientes</h2>
+        </div>
+
+        <button id="btnCerrarHistorial">
+          Cerrar
+        </button>
+      </div>
+
+      <div id="listaHistorial"></div>
+
+    </section>
+
+
+    <!-- CATÁLOGO DE PERFUMES -->
+
+    <section id="catalogo" class="catalogo oculto">
+
+      <div class="historial-header">
+        <div>
+          <span class="etiqueta">CATÁLOGO</span>
+          <h2>Nuestros perfumes</h2>
+          <p>
+            Explora las fragancias disponibles en PerfumeIA.
+          </p>
+        </div>
+
+        <button id="btnCerrarCatalogo">
+          Cerrar
+        </button>
+      </div>
+
+      <div class="catalogo-filtros">
+
+        <input
+          type="text"
+          id="buscarPerfume"
+          placeholder="Buscar perfume por nombre o marca..."
+        >
+
+      </div>
+
+      <div id="listaCatalogo" class="catalogo-grid">
+        <!-- Aquí aparecerán los perfumes -->
+      </div>
+
+    </section>
+
+
+    <!-- PIE DE PÁGINA -->
+
+    <footer>
+      PerfumeIA · Asistente inteligente para recomendación de perfumes
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+
+</body>
+</html>

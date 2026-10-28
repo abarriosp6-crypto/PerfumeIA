@@ -1,0 +1,672 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PerfumeIA</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- =====================================
+       MENÚ LATERAL
+  ====================================== -->
+
+  <aside class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+
+      <div>
+        <h2>PerfumeIA</h2>
+        <span>Tu aroma ideal</span>
+      </div>
+    </div>
+
+    <nav>
+
+      <button class="nav-item active" id="btnInicio">
+        ⌂ Inicio
+      </button>
+
+      <button class="nav-item" id="btnNuevaConsulta">
+        ✦ Nueva consulta
+      </button>
+
+      <button class="nav-item" id="btnCatalogo">
+        ▦ Catálogo
+      </button>
+
+      <button class="nav-item oculto" id="btnHistorial">
+        ◷ Historial
+      </button>
+
+      <button class="nav-item oculto" id="btnAdministracion">
+        ⚙ Administración
+      </button>
+
+
+<button class="nav-item" id="btnLogin">
+  ♙ Iniciar sesión / Registrarse
+</button>
+
+<button class="nav-item oculto" id="btnLogout">
+  ↪ Cerrar sesión
+</button>
+
+
+    </nav>
+
+    <div class="sidebar-bottom">
+      <p>Asistente inteligente</p>
+      <span>Powered by Groq</span>
+    </div>
+
+  </aside>
+
+  <!-- =====================================
+       CONTENIDO PRINCIPAL
+  ====================================== -->
+
+  <main class="main">
+
+    <header>
+
+      <div>
+        <p class="bienvenida">
+          Bienvenido a PerfumeIA 👋
+        </p>
+
+        <h1>Encuentra tu próxima fragancia</h1>
+
+        <p class="subtitulo">
+          Cuéntanos qué estás buscando y nuestra inteligencia
+          artificial te ayudará a encontrar perfumes ideales para ti.
+        </p>
+      </div>
+
+      <div class="estado">
+        <span class="punto"></span>
+        IA disponible
+      </div>
+
+    </header>
+
+    <!-- =====================================
+         CONSULTA DE INTELIGENCIA ARTIFICIAL
+    ====================================== -->
+
+    <section class="consulta-card">
+
+      <div class="card-title">
+
+        <div class="icono">✦</div>
+
+        <div>
+          <h2>¿Qué tipo de perfume buscas?</h2>
+
+          <p>
+            Describe tus gustos, ocasión, clima o el estilo
+            de fragancia que prefieres.
+          </p>
+        </div>
+
+      </div>
+
+      <textarea
+        id="consulta"
+        maxlength="500"
+        placeholder="Ejemplo: Busco un perfume fresco y elegante para hombre, para utilizar todos los días..."
+      ></textarea>
+
+      <div class="acciones">
+
+        <span id="contador">0 / 500</span>
+
+        <button id="btnRecomendar" type="button">
+          ✦ Obtener recomendación
+        </button>
+
+      </div>
+
+      <div class="ejemplos">
+
+        <span>Prueba con:</span>
+
+        <button class="chip" type="button">
+          Fresco y cítrico
+        </button>
+
+        <button class="chip" type="button">
+          Elegante para la noche
+        </button>
+
+        <button class="chip" type="button">
+          Dulce y femenino
+        </button>
+
+        <button class="chip" type="button">
+          Para clima caluroso
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- =====================================
+         INDICADOR DE CARGA
+    ====================================== -->
+
+    <section id="cargando" class="cargando oculto">
+
+      <div class="spinner"></div>
+
+      <h3>
+        PerfumeIA está analizando tus preferencias...
+      </h3>
+
+      <p>
+        Estamos buscando opciones ideales para ti.
+      </p>
+
+    </section>
+
+    <!-- =====================================
+         RESULTADOS DE LA IA
+    ====================================== -->
+
+    <section id="resultado" class="resultado oculto">
+
+      <div class="resultado-header">
+
+        <div>
+          <span class="etiqueta">
+            RECOMENDACIÓN DE IA
+          </span>
+
+          <h2>
+            Estas fragancias pueden gustarte
+          </h2>
+        </div>
+
+        <span class="check">✓ Generada</span>
+
+      </div>
+
+      <div id="respuestaIA" class="respuesta-ia"></div>
+
+    </section>
+
+    <!-- =====================================
+         HISTORIAL PRIVADO
+    ====================================== -->
+
+    <section id="historial" class="historial oculto">
+
+      <div class="historial-header">
+
+        <div>
+          <span class="etiqueta">HISTORIAL</span>
+          <h2>Consultas recientes</h2>
+        </div>
+
+        <button id="btnCerrarHistorial" type="button">
+          Cerrar
+        </button>
+
+      </div>
+
+      <div id="listaHistorial"></div>
+
+    </section>
+
+    <!-- =====================================
+         CATÁLOGO PÚBLICO
+    ====================================== -->
+
+    <section id="catalogo" class="catalogo oculto">
+
+      <div class="historial-header">
+
+        <div>
+          <span class="etiqueta">CATÁLOGO</span>
+          <h2>Nuestros perfumes</h2>
+
+          <p>
+            Explora las fragancias disponibles en PerfumeIA.
+          </p>
+        </div>
+
+        <button id="btnCerrarCatalogo" type="button">
+          Cerrar
+        </button>
+
+      </div>
+
+      <div class="catalogo-filtros">
+
+        <input
+          type="text"
+          id="buscarPerfume"
+          placeholder="Buscar perfume por nombre o marca..."
+        >
+
+      </div>
+
+      <div id="listaCatalogo" class="catalogo-grid">
+        <!-- Perfumes cargados desde SQLite -->
+      </div>
+
+    </section>
+
+    <!-- =====================================
+         INICIO DE SESIÓN
+    ====================================== -->
+
+<!-- INICIO DE SESIÓN Y REGISTRO -->
+
+<section id="loginAdmin" class="catalogo oculto">
+
+  <div class="historial-header">
+    <div>
+      <span class="etiqueta">ACCESO A PERFUMEIA</span>
+      <h2 id="tituloAcceso">Iniciar sesión</h2>
+      <p id="descripcionAcceso">
+        Ingresa con tu cuenta para utilizar las recomendaciones de IA.
+      </p>
+    </div>
+
+    <button id="btnCerrarLogin" type="button">
+      Cerrar
+    </button>
+  </div>
+
+  <div class="admin-formulario">
+
+    <!-- INICIAR SESIÓN -->
+
+    <div id="panelLogin">
+      <h3>Bienvenido</h3>
+
+      <form id="formLoginUsuario">
+
+        <div class="admin-campo">
+          <label for="correoLogin">Correo electrónico</label>
+          <input
+            type="email"
+            id="correoLogin"
+            placeholder="correo@ejemplo.com"
+            autocomplete="username"
+            maxlength="254"
+            required
+          >
+        </div>
+
+        <div class="admin-campo">
+          <label for="passwordLogin">Contraseña</label>
+          <input
+            type="password"
+            id="passwordLogin"
+            placeholder="Escribe tu contraseña"
+            autocomplete="current-password"
+            maxlength="200"
+            required
+          >
+        </div>
+
+        <button type="submit" id="btnIngresar">
+          Iniciar sesión
+        </button>
+
+        <p id="mensajeLogin" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="texto-acceso">
+        ¿Todavía no tienes cuenta?
+        <button type="button" id="btnMostrarRegistro">
+          Crear una cuenta
+        </button>
+      </p>
+
+      <hr>
+
+      <div class="admin-campo">
+        <label for="passwordAdmin">
+          ¿Eres administrador? Ingresa tu contraseña administrativa
+        </label>
+
+        <input
+          type="password"
+          id="passwordAdmin"
+          placeholder="Contraseña de administrador"
+          autocomplete="current-password"
+          maxlength="200"
+        >
+      </div>
+
+      <button type="button" id="btnIngresarAdmin">
+        Acceder como administrador
+      </button>
+
+      <p id="mensajeLoginAdmin" role="status" aria-live="polite"></p>
+    </div>
+
+    <!-- REGISTRO DE USUARIOS -->
+
+    <div id="panelRegistro" class="oculto">
+      <h3>Crear cuenta</h3>
+
+      <p>
+        Regístrate para iniciar sesión y utilizar las recomendaciones
+        de inteligencia artificial.
+      </p>
+
+      <form id="formRegistro">
+
+        <div class="admin-campo">
+          <label for="nombreRegistro">Nombre completo</label>
+          <input
+            type="text"
+            id="nombreRegistro"
+            placeholder="Tu nombre"
+            autocomplete="name"
+            minlength="2"
+            maxlength="100"
+            required
+          >
+        </div>
+
+        <div class="admin-campo">
+          <label for="correoRegistro">Correo electrónico</label>
+          <input
+            type="email"
+            id="correoRegistro"
+            placeholder="correo@ejemplo.com"
+            autocomplete="email"
+            maxlength="254"
+            required
+          >
+        </div>
+
+        <div class="admin-campo">
+          <label for="passwordRegistro">Contraseña</label>
+          <input
+            type="password"
+            id="passwordRegistro"
+            placeholder="Mínimo 10 caracteres"
+            autocomplete="new-password"
+            minlength="10"
+            maxlength="72"
+            required
+          >
+        </div>
+
+        <button type="submit" id="btnRegistrar">
+          Crear cuenta
+        </button>
+
+        <p id="mensajeRegistro" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="texto-acceso">
+        ¿Ya tienes cuenta?
+        <button type="button" id="btnMostrarLogin">
+          Iniciar sesión
+        </button>
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+    
+    <!-- =====================================
+         PANEL DE ADMINISTRACIÓN
+    ====================================== -->
+
+    <section id="administracion" class="catalogo oculto">
+
+      <div class="historial-header">
+
+        <div>
+          <span class="etiqueta">ADMINISTRACIÓN</span>
+
+          <h2>Administrar perfumes</h2>
+
+          <p>
+            Desde esta sección podrás registrar, editar
+            y eliminar perfumes del catálogo.
+          </p>
+        </div>
+
+        <button id="btnCerrarAdministracion" type="button">
+          Cerrar
+        </button>
+
+      </div>
+
+      <!-- FORMULARIO ADMINISTRATIVO -->
+
+      <div class="admin-formulario">
+
+        <h3 id="tituloFormularioPerfume">
+          Registrar un perfume
+        </h3>
+
+        <form id="formPerfume">
+
+          <!-- IDENTIFICADOR PARA EDICIÓN -->
+
+          <input
+            type="hidden"
+            id="idPerfume"
+            value=""
+          >
+
+          <div class="admin-campos">
+
+            <!-- NOMBRE -->
+
+            <div class="admin-campo">
+
+              <label for="nombrePerfume">
+                Nombre del perfume
+              </label>
+
+              <input
+                type="text"
+                id="nombrePerfume"
+                placeholder="Ejemplo: Sauvage"
+                maxlength="120"
+                required
+              >
+
+            </div>
+
+            <!-- MARCA -->
+
+            <div class="admin-campo">
+
+              <label for="marcaPerfume">
+                Marca
+              </label>
+
+              <input
+                type="text"
+                id="marcaPerfume"
+                placeholder="Ejemplo: Dior"
+                maxlength="120"
+                required
+              >
+
+            </div>
+
+            <!-- FAMILIA OLFATIVA -->
+
+            <div class="admin-campo">
+
+              <label for="tipoPerfume">
+                Familia olfativa
+              </label>
+
+              <input
+                type="text"
+                id="tipoPerfume"
+                placeholder="Ejemplo: Fresco aromático"
+                maxlength="120"
+                required
+              >
+
+            </div>
+
+            <!-- CATEGORÍA -->
+
+            <div class="admin-campo">
+
+              <label for="generoPerfume">
+                Categoría
+              </label>
+
+              <select id="generoPerfume" required>
+
+                <option value="">
+                  Seleccionar
+                </option>
+
+                <option value="Hombre">
+                  Hombre
+                </option>
+
+                <option value="Mujer">
+                  Mujer
+                </option>
+
+                <option value="Unisex">
+                  Unisex
+                </option>
+
+              </select>
+
+            </div>
+
+            <!-- DISPONIBILIDAD -->
+
+            <div class="admin-campo">
+
+              <label for="disponiblePerfume">
+                Disponibilidad
+              </label>
+
+              <select id="disponiblePerfume" required>
+
+                <option value="1">
+                  Disponible
+                </option>
+
+                <option value="0">
+                  No disponible
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+          <!-- DESCRIPCIÓN -->
+
+          <div
+            class="admin-campo"
+            style="margin-top: 20px;"
+          >
+
+            <label for="descripcionPerfume">
+              Descripción del perfume
+            </label>
+
+            <textarea
+              id="descripcionPerfume"
+              maxlength="500"
+              placeholder="Describe el aroma, sus notas principales y para qué ocasiones lo recomiendas..."
+              required
+              style="min-height: 110px;"
+            ></textarea>
+
+          </div>
+
+          <!-- BOTONES -->
+
+          <div
+            style="
+              display: flex;
+              gap: 12px;
+              margin-top: 20px;
+              flex-wrap: wrap;
+            "
+          >
+
+            <button
+              type="submit"
+              id="btnGuardarPerfume"
+              disabled
+            >
+              Guardar perfume
+            </button>
+
+            <button
+              type="button"
+              id="btnCancelarEdicion"
+              class="oculto"
+            >
+              Cancelar edición
+            </button>
+
+          </div>
+
+          <p
+            id="mensajeAdmin"
+            role="status"
+            aria-live="polite"
+          >
+            Estamos preparando las funciones
+            de registro, edición y eliminación.
+          </p>
+
+        </form>
+
+      </div>
+
+      <!-- LISTADO DE PERFUMES -->
+
+      <div class="admin-listado">
+
+        <h3>Perfumes registrados</h3>
+
+        <div id="listaAdminPerfumes">
+          <p>Cargando perfumes...</p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =====================================
+         PIE DE PÁGINA
+    ====================================== -->
+
+    <footer>
+      PerfumeIA · Asistente inteligente para recomendación de perfumes
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+
+</body>
+</html>

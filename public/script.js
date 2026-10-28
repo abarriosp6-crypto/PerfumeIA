@@ -1,0 +1,1200 @@
+
+/* ==========================================
+   PERFUMEIA - SCRIPT PRINCIPAL
+========================================== */
+
+// ELEMENTOS DE LA INTERFAZ
+
+const consulta = document.getElementById("consulta");
+const contador = document.getElementById("contador");
+const btnRecomendar = document.getElementById("btnRecomendar");
+const cargando = document.getElementById("cargando");
+const resultado = document.getElementById("resultado");
+const respuestaIA = document.getElementById("respuestaIA");
+
+const btnInicio = document.getElementById("btnInicio");
+const btnNuevaConsulta = document.getElementById("btnNuevaConsulta");
+
+const btnCatalogo = document.getElementById("btnCatalogo");
+const catalogo = document.getElementById("catalogo");
+const listaCatalogo = document.getElementById("listaCatalogo");
+const buscarPerfume = document.getElementById("buscarPerfume");
+const btnCerrarCatalogo = document.getElementById("btnCerrarCatalogo");
+
+const btnHistorial = document.getElementById("btnHistorial");
+const historial = document.getElementById("historial");
+const listaHistorial = document.getElementById("listaHistorial");
+const btnCerrarHistorial = document.getElementById("btnCerrarHistorial");
+
+const btnAdministracion = document.getElementById("btnAdministracion");
+const administracion = document.getElementById("administracion");
+const btnCerrarAdministracion =
+  document.getElementById("btnCerrarAdministracion");
+
+const listaAdminPerfumes =
+  document.getElementById("listaAdminPerfumes");
+
+const formPerfume = document.getElementById("formPerfume");
+const btnGuardarPerfume =
+  document.getElementById("btnGuardarPerfume");
+
+const mensajeAdmin = document.getElementById("mensajeAdmin");
+
+
+ // ==========================================
+ // INICIO DE SESIÓN Y REGISTRO
+ // ==========================================
+
+const btnLogin = document.getElementById("btnLogin");
+const btnLogout = document.getElementById("btnLogout");
+const loginAdmin = document.getElementById("loginAdmin");
+const btnCerrarLogin = document.getElementById("btnCerrarLogin");
+
+const formLoginUsuario = document.getElementById("formLoginUsuario");
+const formRegistro = document.getElementById("formRegistro");
+
+const panelLogin = document.getElementById("panelLogin");
+const panelRegistro = document.getElementById("panelRegistro");
+
+const btnMostrarRegistro = document.getElementById("btnMostrarRegistro");
+const btnMostrarLogin = document.getElementById("btnMostrarLogin");
+
+const correoLogin = document.getElementById("correoLogin");
+const passwordLogin = document.getElementById("passwordLogin");
+const btnIngresar = document.getElementById("btnIngresar");
+const mensajeLogin = document.getElementById("mensajeLogin");
+
+const nombreRegistro = document.getElementById("nombreRegistro");
+const correoRegistro = document.getElementById("correoRegistro");
+const passwordRegistro = document.getElementById("passwordRegistro");
+const btnRegistrar = document.getElementById("btnRegistrar");
+const mensajeRegistro = document.getElementById("mensajeRegistro");
+
+const passwordAdmin = document.getElementById("passwordAdmin");
+const btnIngresarAdmin = document.getElementById("btnIngresarAdmin");
+const mensajeLoginAdmin = document.getElementById("mensajeLoginAdmin");
+
+
+
+ // VARIABLES
+
+let perfumes = [];
+let esAdministrador = false;
+let usuarioActual = null;
+
+
+/* ==========================================
+   FUNCIONES GENERALES
+========================================== */
+
+function escapeHTML(texto) {
+  const div = document.createElement("div");
+  div.textContent = String(texto ?? "");
+  return div.innerHTML;
+}
+
+function ocultarSecciones() {
+  [
+    resultado,
+    historial,
+    catalogo,
+    administracion,
+    loginAdmin,
+    cargando
+  ].forEach(seccion => {
+    seccion.classList.add("oculto");
+  });
+}
+
+function activarMenu(boton) {
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  if (boton) {
+    boton.classList.add("active");
+  }
+}
+
+function mostrarSeccion(seccion, boton) {
+  ocultarSecciones();
+
+  // Ocultar la pantalla principal al abrir otro apartado
+  document.body.classList.add("vista-secundaria");
+
+  seccion.classList.remove("oculto");
+  activarMenu(boton);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function volverInicio() {
+  ocultarSecciones();
+
+  // Volver a mostrar la pantalla principal
+  document.body.classList.remove("vista-secundaria");
+
+  activarMenu(btnInicio);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+function actualizarMenuAdmin() {
+  const esUsuario = Boolean(usuarioActual) && !esAdministrador;
+
+  // Opciones exclusivas del administrador
+  btnHistorial.classList.toggle("oculto", !esAdministrador);
+  btnAdministracion.classList.toggle("oculto", !esAdministrador);
+
+  // Inicio y cierre de sesión
+  btnLogout.classList.toggle("oculto", !esAdministrador && !esUsuario);
+  btnLogin.classList.toggle("oculto", esAdministrador || esUsuario);
+}
+
+
+function mostrarError(error) {
+  console.error(error);
+  return error.message || "Ocurrió un error inesperado.";
+}
+
+async function leerJSON(respuesta) {
+  const datos = await respuesta.json();
+
+  if (!respuesta.ok) {
+    throw new Error(datos.error || "La solicitud no pudo completarse.");
+  }
+
+  return datos;
+}
+
+/* ==========================================
+   VERIFICAR SESIÓN
+========================================== */
+
+async function verificarSesion() {
+  try {
+    const respuesta = await fetch("/api/usuarios/sesion", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    const datos = await leerJSON(respuesta);
+
+    // Reiniciar el estado antes de comprobar la sesión
+    esAdministrador = false;
+    usuarioActual = null;
+
+    if (datos.autenticado === true) {
+
+      // Sesión del administrador
+      if (datos.rol === "administrador") {
+        esAdministrador = true;
+      }
+
+      // Sesión de usuario normal
+      else if (
+        datos.rol === "usuario" ||
+        datos.usuario?.rol === "usuario"
+      ) {
+        usuarioActual = datos.usuario;
+      }
+    }
+
+  } catch (error) {
+    console.error("No se pudo verificar la sesión:", error);
+
+    esAdministrador = false;
+    usuarioActual = null;
+  }
+
+  actualizarMenuAdmin();
+}
+
+/* ==========================================
+   ABRIR INICIO DE SESIÓN
+========================================== */
+
+btnLogin.addEventListener("click", () => {
+  mensajeLogin.textContent = "";
+  mensajeLoginAdmin.textContent = "";
+
+  passwordAdmin.value = "";
+
+  // Mostrar primero el formulario de usuarios
+  panelRegistro.classList.add("oculto");
+  panelLogin.classList.remove("oculto");
+
+  document.getElementById("tituloAcceso").textContent =
+    "Iniciar sesión";
+
+  document.getElementById("descripcionAcceso").textContent =
+    "Ingresa con tu cuenta para utilizar las recomendaciones de IA.";
+
+  mostrarSeccion(loginAdmin, btnLogin);
+
+  correoLogin.focus();
+});
+
+btnCerrarLogin.addEventListener("click", volverInicio);
+
+/* ==========================================
+   INICIAR SESIÓN
+========================================== */
+
+
+btnIngresarAdmin.addEventListener("click", async () => {
+  const password = passwordAdmin.value;
+
+  if (!password) {
+    mensajeLoginAdmin.textContent = "Escribe tu contraseña.";
+    return;
+  }
+
+  btnIngresarAdmin.disabled = true;
+  btnIngresarAdmin.textContent = "Verificando...";
+  mensajeLoginAdmin.textContent = "";
+
+  try {
+    const respuesta = await fetch("/api/admin/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password })
+    });
+
+    await leerJSON(respuesta);
+
+    esAdministrador = true;
+    actualizarMenuAdmin();
+
+    passwordAdmin.value = "";
+    mensajeLoginAdmin.textContent = "";
+
+    mostrarSeccion(administracion, btnAdministracion);
+    await cargarCatalogo();
+
+  } catch (error) {
+    esAdministrador = false;
+    actualizarMenuAdmin();
+
+    mensajeLoginAdmin.textContent = mostrarError(error);
+    passwordAdmin.value = "";
+    passwordAdmin.focus();
+
+  } finally {
+    btnIngresarAdmin.disabled = false;
+    btnIngresarAdmin.textContent = "Acceder como administrador";
+  }
+});
+
+
+
+formLoginUsuario.addEventListener("submit", async evento => {
+  evento.preventDefault();
+
+  const correo = correoLogin.value.trim();
+  const password = passwordLogin.value;
+
+  mensajeLogin.textContent = "";
+  btnIngresar.disabled = true;
+  btnIngresar.textContent = "Verificando...";
+
+  try {
+    const respuesta = await fetch("/api/usuarios/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ correo, password })
+    });
+
+    const datos = await leerJSON(respuesta);
+
+    // Guardar el usuario autenticado
+    usuarioActual = datos.usuario;
+    esAdministrador = false;
+
+    // Actualizar la interfaz
+    actualizarMenuAdmin();
+    passwordLogin.value = "";
+    loginAdmin.classList.add("oculto");
+
+    mensajeLogin.textContent =
+      `Bienvenido, ${usuarioActual.nombre}.`;
+
+    volverInicio();
+
+  } catch (error) {
+    mensajeLogin.textContent = mostrarError(error);
+    passwordLogin.value = "";
+    passwordLogin.focus();
+
+  } finally {
+    btnIngresar.disabled = false;
+    btnIngresar.textContent = "Iniciar sesión";
+  }
+});
+
+
+
+/* ==========================================
+   CERRAR SESIÓN
+========================================== */
+
+btnLogout.addEventListener("click", async () => {
+  try {
+    const rutaLogout = esAdministrador
+      ? "/api/admin/logout"
+      : "/api/usuarios/logout";
+
+    const respuesta = await fetch(rutaLogout, {
+      method: "POST",
+      credentials: "same-origin"
+    });
+
+    await leerJSON(respuesta);
+
+    esAdministrador = false;
+    usuarioActual = null;
+
+    actualizarMenuAdmin();
+
+    if (listaHistorial) {
+      listaHistorial.innerHTML = "";
+    }
+
+    if (listaAdminPerfumes) {
+      listaAdminPerfumes.innerHTML = "";
+    }
+
+    if (passwordAdmin) {
+      passwordAdmin.value = "";
+    }
+
+    if (passwordLogin) {
+      passwordLogin.value = "";
+    }
+
+    if (loginAdmin) {
+      loginAdmin.classList.add("oculto");
+    }
+
+    volverInicio();
+
+    alert("Sesión cerrada correctamente.");
+
+  } catch (error) {
+    alert(mostrarError(error));
+  }
+});
+
+
+/* ==========================================
+   CATÁLOGO DESDE SQLITE
+========================================== */
+
+async function cargarCatalogo() {
+  try {
+    listaCatalogo.innerHTML = "<p>Cargando perfumes...</p>";
+
+    const respuesta = await fetch("/api/perfumes", {
+      cache: "no-store"
+    });
+
+    const datos = await leerJSON(respuesta);
+
+    if (!Array.isArray(datos)) {
+      throw new Error("El catálogo tiene un formato incorrecto.");
+    }
+
+perfumes = datos.map(perfume => ({
+  id: perfume.id,
+  nombre: perfume.nombre,
+  marca: perfume.marca,
+  descripcion: perfume.descripcion,
+  tipo: perfume.tipo_aroma,
+  genero: perfume.genero || "Unisex",
+  disponible: Number(perfume.disponible) === 1
+}));
+
+    filtrarCatalogo();
+
+    if (esAdministrador) {
+      mostrarAdminPerfumes();
+    }
+
+    console.log("Perfumes cargados:", perfumes.length);
+
+  } catch (error) {
+    mostrarError(error);
+
+    listaCatalogo.innerHTML =
+      "<p>No fue posible cargar el catálogo.</p>";
+
+    if (esAdministrador) {
+      listaAdminPerfumes.innerHTML =
+        "<p>No fue posible cargar los perfumes.</p>";
+    }
+  }
+}
+
+function mostrarCatalogo(lista = perfumes) {
+  listaCatalogo.innerHTML = "";
+
+  if (lista.length === 0) {
+    listaCatalogo.innerHTML =
+      "<p>No encontramos perfumes con ese nombre o marca.</p>";
+    return;
+  }
+
+  lista.forEach(perfume => {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "perfume-card";
+
+    tarjeta.innerHTML = `
+      <h3>${escapeHTML(perfume.nombre)}</h3>
+
+      <p class="perfume-marca">
+        ${escapeHTML(perfume.marca)}
+      </p>
+
+      <p class="perfume-descripcion">
+        ${escapeHTML(perfume.descripcion)}
+      </p>
+
+      <span class="perfume-tipo">
+        ${escapeHTML(perfume.tipo)}
+      </span>
+
+      <span class="perfume-disponible">
+        ${perfume.disponible ? "✓ Disponible" : "No disponible"}
+      </span>
+    `;
+
+    listaCatalogo.appendChild(tarjeta);
+  });
+}
+
+function filtrarCatalogo() {
+  const busqueda = buscarPerfume.value
+    .trim()
+    .toLocaleLowerCase("es");
+
+  const filtrados = perfumes.filter(perfume => {
+    const nombre = String(perfume.nombre).toLocaleLowerCase("es");
+    const marca = String(perfume.marca).toLocaleLowerCase("es");
+
+    return nombre.includes(busqueda) ||
+           marca.includes(busqueda);
+  });
+
+  mostrarCatalogo(filtrados);
+}
+
+buscarPerfume.addEventListener("input", filtrarCatalogo);
+
+
+/* ==========================================
+   LISTADO ADMINISTRATIVO
+========================================== */
+
+const idPerfume = document.getElementById("idPerfume");
+const nombrePerfume = document.getElementById("nombrePerfume");
+const marcaPerfume = document.getElementById("marcaPerfume");
+const tipoPerfume = document.getElementById("tipoPerfume");
+const generoPerfume = document.getElementById("generoPerfume");
+const disponiblePerfume = document.getElementById("disponiblePerfume");
+const descripcionPerfume = document.getElementById("descripcionPerfume");
+const btnCancelarEdicion = document.getElementById("btnCancelarEdicion");
+const tituloFormularioPerfume = document.getElementById("tituloFormularioPerfume");
+
+let guardandoPerfume = false;
+
+function mostrarAdminPerfumes() {
+  listaAdminPerfumes.innerHTML = "";
+
+  if (!esAdministrador) {
+    return;
+  }
+
+  if (perfumes.length === 0) {
+    listaAdminPerfumes.innerHTML =
+      "<p>No hay perfumes registrados.</p>";
+    return;
+  }
+
+  perfumes.forEach(perfume => {
+    const elemento = document.createElement("div");
+    elemento.className = "admin-perfume-item";
+
+    elemento.innerHTML = `
+      <div class="admin-perfume-info">
+        <h4>${escapeHTML(perfume.nombre)}</h4>
+
+        <p>
+          <strong>Marca:</strong>
+          ${escapeHTML(perfume.marca)}
+        </p>
+
+        <p>
+          <strong>Tipo:</strong>
+          ${escapeHTML(perfume.tipo)}
+        </p>
+
+        <p>
+          <strong>Estado:</strong>
+          ${perfume.disponible ? "Disponible" : "No disponible"}
+        </p>
+      </div>
+
+      <div class="admin-acciones">
+        <button
+          class="admin-btn-editar"
+          type="button"
+        >
+          Editar
+        </button>
+
+        <button
+          class="admin-btn-eliminar"
+          type="button"
+        >
+          Eliminar
+        </button>
+      </div>
+    `;
+
+    elemento.querySelector(".admin-btn-editar")
+      .addEventListener("click", () => {
+        editarPerfume(perfume.id);
+      });
+
+    elemento.querySelector(".admin-btn-eliminar")
+      .addEventListener("click", () => {
+        eliminarPerfume(perfume.id);
+      });
+
+    listaAdminPerfumes.appendChild(elemento);
+  });
+}
+
+/* ==========================================
+   REINICIAR FORMULARIO
+========================================== */
+
+function limpiarFormularioPerfume() {
+  formPerfume.reset();
+  idPerfume.value = "";
+  disponiblePerfume.value = "1";
+
+  tituloFormularioPerfume.textContent =
+    "Registrar un perfume";
+
+  btnGuardarPerfume.textContent =
+    "Guardar perfume";
+
+  btnCancelarEdicion.classList.add("oculto");
+}
+
+/* ==========================================
+   REGISTRAR Y ACTUALIZAR PERFUMES
+========================================== */
+
+btnGuardarPerfume.disabled = false;
+mensajeAdmin.textContent = "";
+
+formPerfume.addEventListener("submit", async evento => {
+  evento.preventDefault();
+
+  if (!esAdministrador || guardandoPerfume) {
+    return;
+  }
+
+  const nombre = nombrePerfume.value.trim();
+  const marca = marcaPerfume.value.trim();
+  const tipo_aroma = tipoPerfume.value.trim();
+  const descripcion = descripcionPerfume.value.trim();
+
+  if (!nombre || !marca || !tipo_aroma || !descripcion) {
+    mensajeAdmin.textContent =
+      "Completa todos los campos obligatorios.";
+    return;
+  }
+
+
+const datosPerfume = {
+  nombre,
+  marca,
+  tipo_aroma,
+  descripcion,
+  genero: generoPerfume.value,
+  disponible: Number(disponiblePerfume.value)
+};
+
+
+  const id = idPerfume.value;
+  const editando = id !== "";
+
+  const url = editando
+    ? `/api/admin/perfumes/${encodeURIComponent(id)}`
+    : "/api/admin/perfumes";
+
+  const metodo = editando ? "PUT" : "POST";
+
+  guardandoPerfume = true;
+  btnGuardarPerfume.disabled = true;
+
+  btnGuardarPerfume.textContent = editando
+    ? "Actualizando..."
+    : "Guardando...";
+
+  mensajeAdmin.textContent = "";
+
+  try {
+    const respuesta = await fetch(url, {
+      method: metodo,
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(datosPerfume)
+    });
+
+    if (respuesta.status === 401) {
+      esAdministrador = false;
+      actualizarMenuAdmin();
+      limpiarFormularioPerfume();
+      volverInicio();
+      alert("Tu sesión terminó. Inicia sesión nuevamente.");
+      return;
+    }
+
+    const datos = await leerJSON(respuesta);
+
+    limpiarFormularioPerfume();
+
+    await cargarCatalogo();
+
+    mensajeAdmin.textContent =
+      datos.mensaje || "Operación realizada correctamente.";
+
+  } catch (error) {
+    mensajeAdmin.textContent = mostrarError(error);
+
+  } finally {
+    guardandoPerfume = false;
+    btnGuardarPerfume.disabled = false;
+
+    btnGuardarPerfume.textContent =
+      idPerfume.value
+        ? "Actualizar perfume"
+        : "Guardar perfume";
+  }
+});
+
+/* ==========================================
+   EDITAR PERFUME
+========================================== */
+
+function editarPerfume(id) {
+  if (!esAdministrador) {
+    return;
+  }
+
+  const perfume = perfumes.find(item =>
+    Number(item.id) === Number(id)
+  );
+
+  if (!perfume) {
+    mensajeAdmin.textContent =
+      "No se encontró el perfume.";
+    return;
+  }
+
+  idPerfume.value = perfume.id;
+  nombrePerfume.value = perfume.nombre;
+  marcaPerfume.value = perfume.marca;
+  tipoPerfume.value = perfume.tipo;
+  descripcionPerfume.value = perfume.descripcion;
+
+  disponiblePerfume.value =
+    perfume.disponible ? "1" : "0";
+
+disponiblePerfume.value =
+  perfume.disponible ? "1" : "0";
+
+// Recuperar la categoría guardada del perfume.
+generoPerfume.value = perfume.genero || "Unisex";
+
+tituloFormularioPerfume.textContent =
+  "Editar perfume";
+
+btnGuardarPerfume.textContent =
+  "Actualizar perfume";
+  generoPerfume.value = perfume.genero || "Unisex";
+
+  tituloFormularioPerfume.textContent =
+    "Editar perfume";
+
+  btnGuardarPerfume.textContent =
+    "Actualizar perfume";
+
+  btnCancelarEdicion.classList.remove("oculto");
+
+  mensajeAdmin.textContent =
+    "Modifica los datos y presiona Actualizar perfume.";
+
+  formPerfume.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+/* ==========================================
+   CANCELAR EDICIÓN
+========================================== */
+
+btnCancelarEdicion.addEventListener("click", () => {
+  limpiarFormularioPerfume();
+  mensajeAdmin.textContent = "";
+});
+
+/* ==========================================
+   ELIMINAR PERFUME
+========================================== */
+
+async function eliminarPerfume(id) {
+  if (!esAdministrador || guardandoPerfume) {
+    return;
+  }
+
+  const perfume = perfumes.find(item =>
+    Number(item.id) === Number(id)
+  );
+
+  if (!perfume) {
+    alert("No se encontró el perfume.");
+    return;
+  }
+
+  const confirmar = confirm(
+    `¿Estás seguro de eliminar "${perfume.nombre}"?\n\nEsta acción no se puede deshacer.`
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+  guardandoPerfume = true;
+  mensajeAdmin.textContent = "Eliminando perfume...";
+
+  try {
+    const respuesta = await fetch(
+      `/api/admin/perfumes/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        credentials: "same-origin"
+      }
+    );
+
+    if (respuesta.status === 401) {
+      esAdministrador = false;
+      actualizarMenuAdmin();
+      limpiarFormularioPerfume();
+      volverInicio();
+      alert("Tu sesión terminó. Inicia sesión nuevamente.");
+      return;
+    }
+
+    const datos = await leerJSON(respuesta);
+
+    if (Number(idPerfume.value) === Number(id)) {
+      limpiarFormularioPerfume();
+    }
+
+    await cargarCatalogo();
+
+    mensajeAdmin.textContent =
+      datos.mensaje || "Perfume eliminado correctamente.";
+
+  } catch (error) {
+    mensajeAdmin.textContent = mostrarError(error);
+
+  } finally {
+    guardandoPerfume = false;
+  }
+}
+
+/* ==========================================
+   ABRIR ADMINISTRACIÓN
+========================================== */
+
+btnAdministracion.addEventListener("click", async () => {
+  if (!esAdministrador) {
+    return;
+  }
+
+  mostrarSeccion(administracion, btnAdministracion);
+  await cargarCatalogo();
+});
+
+btnCerrarAdministracion.addEventListener(
+  "click",
+  volverInicio
+);
+
+
+/* ==========================================
+   NAVEGACIÓN
+========================================== */
+
+btnInicio.addEventListener("click", volverInicio);
+
+btnNuevaConsulta.addEventListener("click", () => {
+  volverInicio();
+  activarMenu(btnNuevaConsulta);
+  consulta.focus();
+});
+
+btnCatalogo.addEventListener("click", async () => {
+  buscarPerfume.value = "";
+
+  mostrarSeccion(catalogo, btnCatalogo);
+  await cargarCatalogo();
+});
+
+btnCerrarCatalogo.addEventListener("click", volverInicio);
+
+btnCerrarHistorial.addEventListener("click", volverInicio);
+
+/* ==========================================
+   CONTADOR DE CARACTERES
+========================================== */
+
+consulta.addEventListener("input", () => {
+  contador.textContent = `${consulta.value.length} / 500`;
+});
+
+/* ==========================================
+   EJEMPLOS DE CONSULTAS
+========================================== */
+
+document.querySelectorAll(".chip").forEach(boton => {
+  boton.addEventListener("click", () => {
+    const opciones = {
+      "Fresco y cítrico":
+        "Busco un perfume fresco y cítrico para utilizar todos los días.",
+
+      "Elegante para la noche":
+        "Busco un perfume elegante y sofisticado para utilizar de noche.",
+
+      "Dulce y femenino":
+        "Busco un perfume dulce y femenino para ocasiones especiales.",
+
+      "Para clima caluroso":
+        "Busco un perfume fresco para utilizar en clima caluroso."
+    };
+
+    const texto = opciones[boton.textContent.trim()];
+
+    if (texto) {
+      consulta.value = texto;
+      contador.textContent = `${texto.length} / 500`;
+      consulta.focus();
+    }
+  });
+});
+
+/* ==========================================
+   FORMATO DE RECOMENDACIONES
+========================================== */
+
+function formatearRespuesta(texto) {
+  const lineas = String(texto ?? "")
+    .split("\n")
+    .map(linea => linea.trim())
+    .filter(Boolean);
+
+  let html = "";
+
+  lineas.forEach(linea => {
+    const limpia = linea
+      .replace(/\*\*/g, "")
+      .replace(/^[-•]\s*/, "")
+      .trim();
+
+    const nombre = limpia.match(
+      /^(?:PERFUME\s*[12]\s*:|[12][.)]\s+)(.*)$/i
+    );
+
+    if (nombre) {
+      html += `
+        <div class="nombre-perfume">
+          ${escapeHTML(nombre[1].trim())}
+        </div>
+      `;
+      return;
+    }
+
+    const tipo = limpia.match(
+      /^(?:TIPO|Tipo de aroma)\s*:\s*(.*)$/i
+    );
+
+    if (tipo) {
+      html += `
+        <div class="detalle-perfume">
+          <strong>Tipo de aroma:</strong>
+          ${escapeHTML(tipo[1])}
+        </div>
+      `;
+      return;
+    }
+
+    const motivo = limpia.match(
+      /^MOTIVO\s*:\s*(.*)$/i
+    );
+
+    if (motivo) {
+      html += `
+        <div class="detalle-perfume">
+          <strong>¿Por qué lo recomendamos?</strong>
+          ${escapeHTML(motivo[1])}
+        </div>
+      `;
+      return;
+    }
+
+    html += `
+      <div class="detalle-perfume">
+        ${escapeHTML(limpia)}
+      </div>
+    `;
+  });
+
+  return html || "<p>No se recibió una recomendación.</p>";
+}
+
+/* ==========================================
+   RECOMENDACIONES CON GROQ
+========================================== */
+
+btnRecomendar.addEventListener("click", async () => {
+  const texto = consulta.value.trim();
+
+  if (texto.length < 10 || texto.length > 500) {
+    alert("Escribe una descripción de entre 10 y 500 caracteres.");
+    return;
+  }
+
+  ocultarSecciones();
+  cargando.classList.remove("oculto");
+
+  btnRecomendar.disabled = true;
+  activarMenu(btnNuevaConsulta);
+
+  try {
+    const respuesta = await fetch("/api/recomendar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        consulta: texto
+      })
+    });
+
+    const datos = await leerJSON(respuesta);
+
+    respuestaIA.innerHTML =
+      formatearRespuesta(datos.recomendacion);
+
+    cargando.classList.add("oculto");
+    resultado.classList.remove("oculto");
+
+    resultado.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  } catch (error) {
+    cargando.classList.add("oculto");
+    alert(mostrarError(error));
+
+  } finally {
+    btnRecomendar.disabled = false;
+  }
+});
+
+/* ==========================================
+   HISTORIAL PRIVADO
+========================================== */
+
+btnHistorial.addEventListener("click", async () => {
+  if (!esAdministrador) {
+    return;
+  }
+
+  mostrarSeccion(historial, btnHistorial);
+
+  listaHistorial.innerHTML = "<p>Cargando historial...</p>";
+
+  try {
+    const respuesta = await fetch("/api/historial", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    if (respuesta.status === 401) {
+      esAdministrador = false;
+      actualizarMenuAdmin();
+      volverInicio();
+
+      alert("Tu sesión terminó. Inicia sesión nuevamente.");
+      return;
+    }
+
+    const datos = await leerJSON(respuesta);
+
+    if (!Array.isArray(datos)) {
+      throw new Error("El historial tiene un formato incorrecto.");
+    }
+
+    listaHistorial.innerHTML = "";
+
+    if (datos.length === 0) {
+      listaHistorial.innerHTML =
+        "<p>No hay consultas guardadas todavía.</p>";
+      return;
+    }
+
+    datos.forEach(registro => {
+      const elemento = document.createElement("div");
+      elemento.className = "historial-item";
+
+      const fecha = new Date(registro.fecha);
+
+      const fechaTexto = Number.isNaN(fecha.getTime())
+        ? String(registro.fecha ?? "")
+        : fecha.toLocaleString("es-GT");
+
+      elemento.innerHTML = `
+        <h3>${escapeHTML(registro.consulta)}</h3>
+
+        <small>
+          Consulta #${escapeHTML(registro.id)}
+          · ${escapeHTML(fechaTexto)}
+        </small>
+
+        <div class="respuesta-historial">
+          ${formatearRespuesta(registro.respuesta)}
+        </div>
+      `;
+
+      listaHistorial.appendChild(elemento);
+    });
+
+  } catch (error) {
+    listaHistorial.innerHTML = `
+      <p>${escapeHTML(mostrarError(error))}</p>
+    `;
+  }
+});
+
+/* ==========================================
+   INICIALIZAR PERFUMEIA
+========================================== */
+
+async function iniciarPerfumeIA() {
+  await verificarSesion();
+  await cargarCatalogo();
+
+  console.log("PerfumeIA preparada correctamente.");
+}
+
+iniciarPerfumeIA();
+
+/* ==========================================
+   REGISTRO DE USUARIOS
+========================================== */
+
+formRegistro.addEventListener("submit", async evento => {
+  evento.preventDefault();
+
+  const nombre = nombreRegistro.value.trim();
+  const correo = correoRegistro.value.trim();
+  const password = passwordRegistro.value;
+
+  mensajeRegistro.textContent = "";
+  btnRegistrar.disabled = true;
+  btnRegistrar.textContent = "Registrando...";
+
+  try {
+    const respuesta = await fetch("/api/usuarios/registro", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ nombre, correo, password })
+    });
+
+    await leerJSON(respuesta);
+
+    mensajeRegistro.textContent =
+      "Cuenta creada correctamente. Ya puedes iniciar sesión.";
+
+    formRegistro.reset();
+    panelRegistro.classList.add("oculto");
+    panelLogin.classList.remove("oculto");
+
+    document.getElementById("tituloAcceso").textContent =
+      "Iniciar sesión";
+
+    document.getElementById("descripcionAcceso").textContent =
+      "Ingresa con tu cuenta para utilizar las recomendaciones de IA.";
+
+  } catch (error) {
+    mensajeRegistro.textContent = mostrarError(error);
+
+  } finally {
+    btnRegistrar.disabled = false;
+    btnRegistrar.textContent = "Crear cuenta";
+  }
+});
+
+/* MOSTRAR REGISTRO */
+
+btnMostrarRegistro.addEventListener("click", () => {
+  panelLogin.classList.add("oculto");
+  panelRegistro.classList.remove("oculto");
+
+  document.getElementById("tituloAcceso").textContent =
+    "Crear cuenta";
+
+  document.getElementById("descripcionAcceso").textContent =
+    "Regístrate para utilizar las recomendaciones de PerfumeIA.";
+});
+
+/* VOLVER AL INICIO DE SESIÓN */
+
+btnMostrarLogin.addEventListener("click", () => {
+  panelRegistro.classList.add("oculto");
+  panelLogin.classList.remove("oculto");
+
+  document.getElementById("tituloAcceso").textContent =
+    "Iniciar sesión";
+
+  document.getElementById("descripcionAcceso").textContent =
+    "Ingresa con tu cuenta para utilizar las recomendaciones de IA.";
+});
+

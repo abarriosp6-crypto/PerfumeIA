@@ -1,0 +1,25 @@
+{
+  "name": "perfumeia",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "express-session": "^1.19.0",
+    "groq-sdk": "^1.5.0",
+    "readline-sync": "^1.4.10",
+    "sqlite3": "^6.0.1"
+  }
+}
