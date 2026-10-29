@@ -1,0 +1,51 @@
+/* ==========================================
+   PERFUMEIA - HISTORIAL DE CONVERSACIONES
+========================================== */
+
+/* Botón cerrar historial */
+#btnCerrarHistorial {
+  border: none;
+  background: #f0eef9;
+  color: #6254d9;
+  padding: 9px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Efecto hover */
+#btnCerrarHistorial:hover {
+  background: #e3ddff;
+}
+
+/* Elementos del historial */
+.historial-item {
+  padding: 20px 0;
+  border-bottom: 1px solid #efedf4;
+}
+
+.historial-item:last-child {
+  border-bottom: none;
+}
+
+/* Título de cada conversación */
+.historial-item h3 {
+  font-size: 15px;
+  margin-bottom: 7px;
+}
+
+/* Fecha de la conversación */
+.historial-item small {
+  color: #aaa6b4;
+}
+
+/* Descripción */
+.historial-item p {
+  margin-top: 10px;
+  color: #6e697b;
+  line-height: 1.6;
+}
+
+/* Respuesta guardada */
+.respuesta-historial {
+  margin-top: 15px;
+}
