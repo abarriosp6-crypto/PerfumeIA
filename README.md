@@ -1,4 +1,4 @@
-# PerfumeIA 💜
+# PerfumeIA
 ### Asistente inteligente para recomendación y gestión de perfumes
 
 **Universidad:** Universidad Mariano Gálvez de Guatemala
