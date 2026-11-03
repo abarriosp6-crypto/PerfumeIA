@@ -1310,7 +1310,15 @@ consulta.scrollIntoView({
 
   } catch (error) {
     cargando.classList.add("oculto");
-    alert(mostrarError(error));
+
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      alert(
+        "No se pudo establecer conexión con el servidor. " +
+        "Verifica tu conexión a Internet e inténtalo nuevamente."
+      );
+    } else {
+      alert(mostrarError(error));
+    }
 
   } finally {
     btnRecomendar.disabled = false;
@@ -2072,11 +2080,6 @@ function BufferByteLength(texto) {
   return new TextEncoder().encode(texto).length;
 }
 
-// ==========================================
-// INICIALIZAR RECUPERACIÓN
-// ==========================================
-
-comprobarEnlaceRecuperacion();
 /* ==========================================
    PERFUMEIA - MENSAJES DEL CHAT
 ========================================== */
@@ -2148,3 +2151,8 @@ function limpiarMensajesChat() {
   }
 
 }
+// ==========================================
+// INICIALIZAR RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+comprobarEnlaceRecuperacion();
